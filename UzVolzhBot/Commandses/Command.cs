@@ -42,7 +42,10 @@
             this.description = description;
             if (texts is null || texts!.Length == 0) this.texts = new List<string>();
             else
-            { this.texts = texts!.ToList(); }
+            {
+                this.texts = new List<string>() { name };
+                this.texts.AddRange(texts!.ToList());
+            }
         }
         public Command(string name, string firstTexts, string description)
         {

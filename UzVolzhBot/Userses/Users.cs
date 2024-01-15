@@ -77,12 +77,13 @@ namespace TelegramBotClean.Userses
             get 
             {
                 if (this.Count == 0) return null;
-                for (int i = 0; i < this.Count; i++)
-                {
-                    if (this[i].BaseInfo.Id == id) return this[i];
-                }
-                return null;
+                return this.Where(u => u.Id == id)!.First()!;
+                
             }
+        }
+        public void Add(User user)
+        {
+            base.Add(user);
         }
     }
 }

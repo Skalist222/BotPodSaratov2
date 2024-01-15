@@ -4,6 +4,19 @@ namespace TelegramBotClean.Commandses
 {
     public class Commands : CommandList
     {
+        // Сюда писать новые команды
+        private static Dictionary<string, Command> allCommands = new Dictionary<string, Command>
+        {
+            {"start",new Command("/start",new string[]{ "старт","start"})},
+            {"mem",new Command("/mem",new string[]{ "мем" })},
+            {"gold",new Command("/gold",new string[]{ "золот","gold"})},
+            {"verse",new Command("/verse",new string[]{ "стих","стиш"})},
+            {"add",new Command("/verse",new string[]{ "добав","+","add"})},
+            {"bible",new Command("/bible",new string[]{ "библ","bibl"})},
+            {"info",new Command("/info",new string[]{ "инфо","info"})},
+            {"on",new Command("/on",new string[]{ "включ","on"})},
+            {"off",new Command("/off",new string[]{ "выключ","отключ","off"})}
+        };
 
         //Для полноценной команды в программу нужно:
         //1) Создать геттер по примеру MemCommand.
@@ -12,69 +25,23 @@ namespace TelegramBotClean.Commandses
 
         //Все команды
         #region Все команды (Геттеры)
+        // геттеры нужны, чтобы обращаться к существующим командам
         /// <summary>
         /// Геттер команды "мем"
         /// </summary>
-        public static Command MemCommand
-        {
-            get
-            {
-                Command com = new Command("/mem");
-                com.SetVariants(new string[] { com.Name, "мем" });
-                return com;
-            }
-        }
+        public static Command MemCommand { get { return allCommands["mem"]; } }
         /// <summary>
         /// Геттер команды "золотой"
         /// </summary>
-        public static Command GoldCommand
-        {
-            get
-            {
-                Command com = new Command("/gold");
-                com.SetVariants(new string[] { com.Name, "золот" });
-                return com;
-            }
-        }
+        public static Command GoldCommand { get { return allCommands["gold"]; } }
         /// <summary>
         /// Геттер команды "Стих"
         /// </summary>
-        public static Command VerseCommand
-        {
-            get
-            {
-                Command com = new Command("/verse");
-                com.SetVariants(new string[] { com.Name,  "стих", "стиш" });
-                return com;
-            }
-        }
-        public static Command AddCommand
-        {
-            get 
-            {
-                Command com = new Command("/add");
-                com.SetVariants(new string[] { com.Name, "доба", "+","add"});
-                return com;
-            }
-        }
-        public static Command BibleCommand
-        {
-            get
-            {
-                Command com = new Command("/bible");
-                com.SetVariants(new string[] { com.Name,  "библи","bibl"});
-                return com;
-            }
-        }
-        public static Command InfoCommand
-        {
-            get
-            {
-                Command com = new Command("/info");
-                com.SetVariants(new string[] { com.Name, "инфо"});
-                return com;
-            }
-        }
+        public static Command VerseCommand { get { return allCommands["verse"]; } }
+        public static Command AddCommand { get { return allCommands["add"]; } }
+        public static Command BibleCommand { get { return allCommands["bible"]; } }
+        public static Command InfoCommand { get { return allCommands["info"]; } }
+        public static Command StartCommand { get { return allCommands["start"]; } }
         #endregion
 
 
@@ -82,6 +49,8 @@ namespace TelegramBotClean.Commandses
         public static Commands GoldVerseCommand { get { return GoldCommand + VerseCommand; } }
         public static Commands AddGoldVerseCommand { get { return AddCommand + GoldVerseCommand; } }
         #endregion
+      
+
 
 
         #region Идентификаторы (проверка что именно это за команды)
@@ -90,10 +59,13 @@ namespace TelegramBotClean.Commandses
             Commands selected = Commands.SelectCommands(variativText);
             return selected == this;
         }
+
+        // Не уверен что они пригодятся, удалить если вдруг они не пригодились
         public bool IsMem { get { return this.FirstEqual(Commands.MemCommand); } }
         public bool IsVerse { get { return this.FirstEqual(Commands.VerseCommand); } }
         public bool IsGoldVerse { get { return this.Have(Commands.GoldVerseCommand); } }
         public bool IsAddGoldVerse { get { return this.Have(Commands.AddGoldVerseCommand); } }
+        public bool IsStart { get { return this.FirstEqual(Commands.StartCommand); } }
         #endregion
 
 
@@ -107,12 +79,9 @@ namespace TelegramBotClean.Commandses
         /// </param>
         public Commands(bool clean = true) : base()
         {
-
             if (!clean)
             {
-                // Сюда записывать новые геттеры
-                this.Add(MemCommand, GoldCommand, VerseCommand, BibleCommand, InfoCommand);
-                this.Add(AddCommand);
+                this.AddRange(allCommands.Select(el => el.Value).ToList());
             }
         }
         #endregion

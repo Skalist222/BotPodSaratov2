@@ -120,7 +120,7 @@ namespace TelegramBotClean.Data
             {
                 Error("База не готова к выполнению!", "Execute");
                 SetNullOnElements();
-                return null;
+                return new DataTable();
             }
             Info("Попытка выполнить запрос: " + sql + " База:" + con.Database, met);
             try
@@ -175,7 +175,8 @@ namespace TelegramBotClean.Data
         }
         protected DataTable SelectAllIn(string table, string where = "")
         {
-            string sqlCommandString = string.Join(" ", new string[] { "Select * FROM", table,  where, ";" });
+            string WhereString = where == "" ? "" : "WHERE " + where;
+            string sqlCommandString = string.Join(" ", new string[] { "Select * FROM", table, WhereString, ";" });
             return Select(sqlCommandString);
         }
 
@@ -306,7 +307,7 @@ namespace TelegramBotClean.Data
     public class BotDB : MSSQLDBWorker
     {
         public BotDB() : base(Config.PathToDBBot) { }
-      
+        
         public Users GetAllUsers()
         {
             DataTable dbTable = SelectAllIn("users");
@@ -342,6 +343,30 @@ namespace TelegramBotClean.Data
             
             
             
+        }
+        public User GetUser(long id)
+        {
+            DataTable t = SelectAllIn("users","id = "+id);
+            if (t.Rows.Count == 1)
+            {
+                DataRow r = t.Rows[0];
+                return new User(r);
+            }
+            else
+            {
+                return null;
+            }
+          
+        }
+        public bool CreateUser(User user)
+        {
+            if (GetUser(user.Id) is null)
+            {
+                return Execute($"Insert Into users(Id,nick,lastName,firstName,lastStih,spam,privileges,uniqName,ban)" +
+                    $"values" +
+                    $"({user.Id},'{user.NickName}','{user.Lastname}','{user.FirstName}','-',1,'{user.TypeUser.Name}','{user.UniqName}',0)");
+            }
+            return false;
         }
 
     }

@@ -4,7 +4,10 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Telegram.Bot.Requests;
+using Telegram.Bot.Types;
 using TelegramBotClean.Commandses;
+using TelegramBotClean.Data;
 using TelegramBotClean.Messages;
 
 namespace TelegramBotClean.Userses
@@ -94,50 +97,47 @@ namespace TelegramBotClean.Userses
             lastMessage = null;
         }
     }
-    public class User
+    public class User:BaseUserInfo
     {
         protected UserType type;
         protected TeenInfo teenInfo;
         protected TeacherInfo teacherInfo;
 
-        public BaseUserInfo BaseInfo { get; }
+      
         public TeenInfo TeenInfo { get { if (this is Teen) return teenInfo; else return null; } }
         public TeacherInfo TeacherInfo { get { if (this is Teacher) return teacherInfo; else return null; } }
-        
-        
 
         public string Name { get 
             {
-                return new List<string>() {BaseInfo.UniqName, BaseInfo.FirstName, BaseInfo.Lastname,BaseInfo.NickName,"NoName"}.Where(s => s != "").First();
+                return new List<string>() {UniqName, FirstName, Lastname, NickName,"NoName"}.Where(s => s != "").First();
             } 
         }
         public UserType TypeUser { get { return type; } }
-        public User(long id, string nickName, string firstName, string lastName, bool banned,string uniqName, MessageI lastMessage)
+
+        public User(DataRow r):base(r)
         {
-            BaseInfo = new BaseUserInfo(id, nickName, firstName, lastName, banned, uniqName,lastMessage);
             type = UserTypes.BaseUser;
         }
-        public User(DataRow r)
+        public User(long id, string nickName, string firstName, string lastName, bool banned, string uniqName, MessageI lastMessage) 
+            :base(id,  nickName,  firstName,  lastName,  banned,  uniqName,  lastMessage)
         {
-            BaseInfo = new BaseUserInfo(r);
+            type = UserTypes.BaseUser;
+        }
+        public User(Telegram.Bot.Types.User user) : this(user.Id, user.Username, user.FirstName, user.LastName, false, "", null) 
+        {
             type = UserTypes.BaseUser;
         }
 
         public string ToString()
         {
-            return $"({type.Name}:{BaseInfo.Id}) {Name}";
+            return $"({type.Name}:{Id}) {Name}";
         }
-
-
     }
 
 
     public class DefaultUser : User
     {
-        public DefaultUser(long id, string nickName, string firstName, string lastName, bool banned,string uniqName, MessageI lastMessage) : base(id, nickName, firstName, lastName, banned,uniqName, lastMessage)
-        {
-            type = UserTypes.BaseUser;
-        }
+       
         public DefaultUser(DataRow r):base(r)
         {
            type = UserTypes.BaseUser;
@@ -145,11 +145,6 @@ namespace TelegramBotClean.Userses
     }
     public class Teen : User
     {
-        public Teen(long id, string nickName, string firstName, string lastName, bool banned,string uniqName, MessageI lastMessage) : base(id, nickName, firstName, lastName, banned, uniqName, lastMessage)
-        {
-            teenInfo = new TeenInfo();
-            type = UserTypes.Teen;
-        }
         public Teen(DataRow r) : base(r)
         {
             type = UserTypes.Teen;
@@ -161,12 +156,6 @@ namespace TelegramBotClean.Userses
     }
     public class Teacher : User
     {
-
-        public Teacher(long id, string nickName, string firstName, string lastName, bool banned,string uniqName, MessageI lastMessage) : base(id, nickName, firstName, lastName, banned, uniqName, lastMessage)
-        {
-            teacherInfo = new TeacherInfo();
-            type = UserTypes.Teacher;
-        }
         public Teacher(DataRow r) : base(r)
         {
             type = UserTypes.Teacher;
@@ -174,11 +163,6 @@ namespace TelegramBotClean.Userses
     }
     public class Admin : User
     {
-        public Admin(long id, string nickName, string firstName, string lastName, bool banned,string uniqName, MessageI lastMessage) : base(id, nickName, firstName, lastName, banned, uniqName, lastMessage)
-        {
-            teacherInfo = new TeacherInfo();
-            type = UserTypes.Admin;
-        }
         public Admin(DataRow r) : base(r)
         {
             type = UserTypes.Admin;

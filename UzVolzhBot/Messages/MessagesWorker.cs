@@ -14,7 +14,8 @@ namespace TelegramBotClean.Messages
 {
     public class MessageI
     {
-        long sender = 0;//айди получателя, кому направлено данное сообщение
+        User senderUser = null;
+        long senderId = 0;//айди получателя, кому направлено данное сообщение
         long recipient = 0;//айди отправителя, от кого было направлено сообщение
         string text = "";//текст сообщения
         Bitmap photo = null;//картинка сообщения
@@ -22,6 +23,7 @@ namespace TelegramBotClean.Messages
         string command = "";//полученная команда
         string smile = "";// если получен стикер, будет определен смайлик этого стикера
         Commands commands = new Commands(true);
+
 
         public string Text { get { return text; } }
         public string ImageId { get { return imageId; } }
@@ -31,7 +33,10 @@ namespace TelegramBotClean.Messages
         /// <summary>
         /// Отправитель сообщения
         /// </summary>
-        public long Sender { get { return sender; } }
+        public long SenderId { get { return senderId; } }
+        public User Sender { get { return senderUser; } }
+
+
         /// <summary>
         /// Получатель сообщения
         /// </summary>
@@ -40,7 +45,7 @@ namespace TelegramBotClean.Messages
 
 
 
-        public void SetSender(long id) { sender = id; }
+        public void SetSender(long id) { senderId = id; }
         public void SetRecipient(long id) { recipient = id; }
         /// <summary>
         /// Записывает в сообщение новый текст
@@ -75,7 +80,7 @@ namespace TelegramBotClean.Messages
             {
                 //получено обычное сообщение или нажата кнопка ОСНОВНОГО меню
                 Message mes = up.Message;
-                sender = mes.From.Id;
+                senderId = mes.From.Id;
                 MessageType mesType = mes.Type;
 
                 if (mesType == MessageType.Photo)
@@ -142,7 +147,7 @@ namespace TelegramBotClean.Messages
             {
                 if (up.CallbackQuery != null)
                 {// Нажата кнопка в сообщении
-                    sender = up.CallbackQuery.From.Id;
+                    senderId = up.CallbackQuery.From.Id;
                     command = up.CallbackQuery.Data;
                 }
                 else

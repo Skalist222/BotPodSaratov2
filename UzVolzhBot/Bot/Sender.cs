@@ -8,6 +8,7 @@ using TelegramBotClean.Messages;
 using TelegramBotClean.Userses;
 using TelegramBotClean.Data;
 using System.Data;
+using User = TelegramBotClean.Userses.User;
 
 namespace TelegramBotClean.Bot
 {
@@ -126,6 +127,12 @@ namespace TelegramBotClean.Bot
             DateTime start = DateTime.Now;
             MessageI receivedMes = new MessageI(up,botClient,token);// Полученное сообщение
             MessageI toSendMes = new MessageI("");// сообщение которое мы отправим в обратку
+
+            Telegram.Bot.Types.User userTelegram = up.Message is not null ? up.Message.From : up.CallbackQuery.From;
+            //Если пользователя нет в базе данных
+            User us = botBase.GetUser(receivedMes.SenderId);
+
+
             //Во первых проверяем есть ли команда
             if (receivedMes.HaveCommand)
             {
@@ -135,44 +142,82 @@ namespace TelegramBotClean.Bot
 
                 bool select = false;// определяет, найдена ли нужная команда
 
+
                 // Тут получение команд
+                if (!select && receivedMes.Commands.Is("старт"))
+                {
+                    SendAdminMessage("Получена команда мем");
+                    // При начале работы бота или при нажатии на кнопку старт
+                    if (us == null)
+                    {
+                        if (botBase.CreateUser(new User(userTelegram)))
+                        {
+                            users.Add(botBase.GetUser(userTelegram.Id));
+                            SendAdminMessage("Создан новый пользователь " + users[userTelegram.Id].ToString());
+                            Console.WriteLine("Добавлен новый пользователь");
+                            SendMenu(userTelegram.Id, "Привет, дорогой друг. Этот бот предназначен для учеников воскресной школы(подростков). Нажми /help чтобы разобраться, как работает бот.");
+                        }
+                        else
+                        {
+                            Console.WriteLine("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                            Console.WriteLine("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                            Console.WriteLine("!!!Не удалось добавить пользователя!!!");
+                            Console.WriteLine("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                            Console.WriteLine("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                        }
+                    }
+                    else
+                    {
+                        SendMenu(userTelegram.Id,"Рад тебя снова видеть!");
+                    }
+                    select = true;
+                }
                 if (!select && receivedMes.Commands.Is("мем"))
                 {
-                    //Типа нажата кнопка мем
+                    SendAdminMessage("Получена команда мем");
+                    Console.WriteLine("Команда мем");
                     select = true;
                 }
                 if (!select && receivedMes.Commands.Is("золой стих"))
                 {
+                    SendAdminMessage("Получена команда Золотой стих");
                     //Золотой стих
                     select = true;
                 }
                 if (!select && receivedMes.Commands.Is("инфо"))
                 {
+                    SendAdminMessage("Получена команда Инфо");
                     toSendMes.SetText(Config.Info.Text);
                     select = true;
                 }
                 if (!select && receivedMes.Commands.Is("добавить золотой стих"))
                 {
+                    SendAdminMessage("Получена команда Добавление золотого стиха");
                     //добавление золотого стиха
                     select = true;
                 }
                 if (!select && receivedMes.Commands.Is("добавить мем"))
                 {
+                    SendAdminMessage("Получена команда добавления мема");
                     //информация
                     select = true;
                 }
                 if (!select)
                 {
+                    SendAdminMessage("Пришла неизвестная команда");
                     Console.WriteLine("Левая какая то команда, может быть случайные слова вообще");
                 }
-                SendMessage(toSendMes, receivedMes.Sender);
+                else
+                {
+                    if(receivedMes.Text !="") SendMessage(toSendMes, receivedMes.SenderId);
+                }
             }
             else
             {
-                
+                SendAdminMessage("Пришло сообщение без команд");
             }
             DateTime finish = DateTime.Now;
-            SendAdminMessage("Пришло сообщение ("+(finish-start).TotalSeconds+" sec.)");
+            SendAdminMessage(""+(finish-start).TotalSeconds+" sec.");
         }
     }
 }
