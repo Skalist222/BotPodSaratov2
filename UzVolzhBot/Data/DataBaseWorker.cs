@@ -158,6 +158,29 @@ namespace TelegramBotClean.Data
                 return new DataTable();
             }
         }
+        
+        protected DataTable Select(string[] columns, string table, string where = "")
+        {
+            string columnsStr = string.Join(", ",columns);
+            string WhereString = where == "" ? "" : "WHERE " + where;
+            string sqlCommandString = string.Join(" ", new string[] { "Select", columnsStr,"FROM", table, WhereString, ";" });
+            return Select(sqlCommandString);
+        }
+        protected DataTable Select(string column, string table, string where = "")
+        {
+            string WhereString = where == "" ? "" : "WHERE " + where;
+            string sqlCommandString = string.Join(" ", new string[] { "Select", column, "FROM", table, WhereString, ";" });
+            return Select(sqlCommandString);
+        }
+        protected DataTable SelectAllIn(string table, string where = "")
+        {
+            string sqlCommandString = string.Join(" ", new string[] { "Select * FROM", table,  where, ";" });
+            return Select(sqlCommandString);
+        }
+
+
+
+
         protected string SelectOneString(string sql)
         {
             DataTable t = Select(sql);
@@ -279,6 +302,14 @@ namespace TelegramBotClean.Data
             return false;
         }
     }
+    public class BotDB : MSSQLDBWorker
+    {
+        public BotDB() : base(Config.PathToDBBot) { }
+        public DataTable GetAllUsers()
+        {
+            return SelectAllIn("users");
+        }
+    }
     internal class Logger
     {
         public static bool FileLogEnabled = false;
@@ -328,6 +359,4 @@ namespace TelegramBotClean.Data
             Debug.WriteLine("___________________________________________________");
         }
     }
-
-
 }

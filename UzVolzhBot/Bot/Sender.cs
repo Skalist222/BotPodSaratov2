@@ -1,15 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Telegram.Bot.Types;
+﻿using Telegram.Bot.Types;
 using Telegram.Bot;
 using System.Drawing;
+using Telegram.Bot.Types.ReplyMarkups;
+using Telegram.Bot.Types.InputFiles;
+using TelegramBotClean.Commandses;
+using TelegramBotClean.Messages;
+using TelegramBotClean.Userses;
 using TelegramBotClean.Data;
-using System.Security.Cryptography.X509Certificates;
-using Telegram.Bot.Types.Enums;
-using System.Threading;
+using System.Data;
 
 namespace TelegramBotClean.Bot
 {
@@ -17,13 +15,16 @@ namespace TelegramBotClean.Bot
     {
         TelegramBotClient botClient;
         CancellationToken token;
+        Users users;
         public Sender(TelegramBotClient botClient, CancellationToken token)
         {
             this.botClient = botClient;
             this.token = token;
+            DataTable t = new BotDB().GetAllUsers();
+            users = new Users(t);
         }
 
-        internal async Task SendText(string text, long idChat)
+        private async Task SendText(string text, long idChat)
         {
             try
             {
@@ -35,7 +36,7 @@ namespace TelegramBotClean.Bot
             }
 
         }
-        internal async Task SendImage(string pathImage, long idChat, string caption = "")
+        private async Task SendImage(string pathImage, long idChat, string caption = "")
         {
             var bm = Bitmap.FromFile(pathImage);
             var ms = new MemoryStream();
@@ -51,123 +52,127 @@ namespace TelegramBotClean.Bot
                 );
             }
         }
-        public async Task DeleteMessage(int idMessage, long userDeleted)
+        private async Task SendImage(Bitmap image, long idChat, string caption = "")
+        {
+            string path = "C:/Windows/Temp/image.jpg";
+            using (MemoryStream ms = new MemoryStream())
+            {
+                Bitmap newBM = new Bitmap(image);
+                image.Dispose();
+                newBM.Save(path, System.Drawing.Imaging.ImageFormat.Jpeg);
+                using (FileStream fileStream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read))
+                {
+                    await botClient.SendPhotoAsync(
+                        chatId:idChat,
+                        photo: new InputOnlineFile(fileStream),
+                        caption: caption
+                    );
+                }
+            }
+            System.IO.File.Delete(path);
+        }
+        private async Task DeleteMessage(int idMessage, long userDeleted)
         {
             await botClient.DeleteMessageAsync(
                 chatId: userDeleted,
                 messageId: idMessage
                 );
         }
-        internal async Task SendMessage(MessageI message, long idChat)
+
+
+        public async Task SendMessage(MessageI message, long idChat)
         {
-            
+            if (message.IsText) SendText(message.Text,idChat);
+            if (message.IsPhoto) SendImage(message.Photo, idChat);
         }
+        public async Task SendMessage(string message, long idChat)
+        {
+           SendText(message, idChat);
+        }
+        public async Task SendAdminMessage(MessageI message)
+        {
+            long idChat = 1094316046L;
+            if (message.IsText) SendText(message.Text, idChat);
+            if (message.IsPhoto) SendImage(message.Photo, idChat);
+        }
+        public async Task SendAdminMessage(string message)
+        {
+           SendText(message, 1094316046L);
+        }
+        public async Task SendMenu(long idChat,string textInfo= "Мир тебе, дорогой мой друг")
+        {
+            if (textInfo == "") textInfo = "Мир тебе, дорогой мой друг";// Если вдруг человек отправил пустую строку 
+            BaseMenu menu = new BaseMenu();
+            ReplyKeyboardMarkup mrkp = new ReplyKeyboardMarkup(keyboard: menu.ButtonTable);
+            try
+            {
+                await botClient.SendTextMessageAsync(
+                               chatId: idChat,
+                               text: textInfo,
+                               replyMarkup: mrkp
+                );
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Не удалось отправить сообщение пользователю "+e.Message);
+            }
+        }
+        
+
 
         public async void CreateAnswere(Update up)
         {
-            MessageI message = new MessageI(up,botClient,token);
-            if (message.IsCommand)
-            {///Нажата любая кнопка 
-                // Здесь мы должны понять какая кнопка нажата и ответить в соответствии
-            }
-            if (message.IsText)
-            {///Получен простой текст
-
-            }
-            if (message.IsSticker)
-            {///Получен стикер 
-
-            }
-        }
-    }
-
-    public class MessageI
-    {
-        string text = "";
-        string imageId = "";
-        string command = "";
-        string smile = "";
-        Bitmap image = null;
-
-
-
-        public string Text { get { return text; } }
-        public string ImageId { get { return imageId; } }
-        public string Command { get { return command; } }
-        public string Smile { get { return smile; } }
-        
-        public bool IsText { get { return text != "" && imageId == "" && command =="" && smile == ""; } }
-        public bool IsPhoto { get { return imageId != "" && text == ""; } }
-        public bool IsPhotoWithText { get { return imageId != "" && text != ""; } }
-        public bool IsCommand { get { return command != ""; } }
-        public bool IsSticker { get { return smile != ""; } }
-
-        public MessageI(string text, string imageId="", string command="", string smile="",Bitmap image = null)
-        {
-            this.text = text;
-            this.imageId = imageId;
-            this.command = command;
-            this.smile = smile;
-            this.image = image;
-        }
-
-        public MessageI(Update up,TelegramBotClient botClient,CancellationToken token)
-        {
-            //начинаю формирование полученого сообщения
-            if (up.Message != null)
+            DateTime start = DateTime.Now;
+            MessageI receivedMes = new MessageI(up,botClient,token);// Полученное сообщение
+            MessageI toSendMes = new MessageI("");// сообщение которое мы отправим в обратку
+            //Во первых проверяем есть ли команда
+            if (receivedMes.HaveCommand)
             {
-                // получено обычное сообщение или нажата кнопка ОСНОВНОГО меню
-                Message mes = up.Message;
-                MessageType mesType = mes.Type;
+                // В данном случае & проверяет, есть ли в командах сообщения команда МЕМ
+                // если стоит &  значит проверяется первая найденая команда
+                // если стоит | то проверяется есть ли среди команд введенная
 
-                if (mesType == MessageType.Photo)
+                bool select = false;// определяет, найдена ли нужная команда
+
+                // Тут получение команд
+                if (!select && receivedMes.Commands.Is("мем"))
                 {
-                    text = mes.Caption;
-                    if (text is null) text = "";
-                    Telegram.Bot.Types.File fileInfo = botClient.GetFileAsync(mes.Photo[mes.Photo.Length-1].FileId).Result;
-                    string filePath = fileInfo.FilePath;
-                    string newNameFile = Directory.GetCurrentDirectory() + "\\"+ fileInfo.FileUniqueId[0..15] + " "+Path.GetFileName(filePath);
-                    
-                    using (FileStream fileStream = new FileStream(newNameFile, FileMode.Create))
-                    {
-                        botClient.DownloadFileAsync(
-                            filePath: filePath,
-                            destination: fileStream,
-                            cancellationToken: token).GetAwaiter().GetResult();
-                        image = (Bitmap)Bitmap.FromStream(fileStream);
-                    }
+                    //Типа нажата кнопка мем
+                    select = true;
                 }
-                if (mesType == MessageType.Text)
+                if (!select && receivedMes.Commands.Is("золой стих"))
                 {
-                    text = mes.Text;
-                    // проверяю не команда ли это                
-                    if (text![0].ToString() == Config.InvizibleChar)
-                    {
-                        // Значит это команда!
-                        command = text[1..];//Получаем текст команды со второго символа(чтобы обрезать невидимый)
-                    }
+                    //Золотой стих
+                    select = true;
                 }
-                if (mesType == MessageType.Sticker)
+                if (!select && receivedMes.Commands.Is("инфо"))
                 {
-                    text = mes.Sticker!.FileId;
-                    smile = mes.Sticker!.Emoji ?? "!";
+                    toSendMes.SetText(Config.Info.Text);
+                    select = true;
                 }
-                
+                if (!select && receivedMes.Commands.Is("добавить золотой стих"))
+                {
+                    //добавление золотого стиха
+                    select = true;
+                }
+                if (!select && receivedMes.Commands.Is("добавить мем"))
+                {
+                    //информация
+                    select = true;
+                }
+                if (!select)
+                {
+                    Console.WriteLine("Левая какая то команда, может быть случайные слова вообще");
+                }
+                SendMessage(toSendMes, receivedMes.Sender);
             }
             else
             {
-                if (up.CallbackQuery != null)
-                {// Нажата кнопка в сообщении
-                    command = up.CallbackQuery.Data;
-                }
-                else
-                {
-                    //Вот тут уже поинтереснее... я не знаю какой может быть другой вариант
-                }
+                
             }
+            DateTime finish = DateTime.Now;
+            SendAdminMessage("Пришло сообщение ("+(finish-start).TotalSeconds+" sec.)");
         }
-        
-
     }
 }
 

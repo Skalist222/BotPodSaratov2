@@ -5,6 +5,7 @@ using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Constantdata;
+using TelegramBotClean.Messages;
 
 namespace TelegramBotClean.Bot
 {
@@ -27,17 +28,15 @@ namespace TelegramBotClean.Bot
                 receiverOptions: new ReceiverOptions{AllowedUpdates = Array.Empty<UpdateType>()},
                 cancellationToken: token
             );
+            sender.SendAdminMessage(new MessageI("Был запущен бот"));
+            sender.SendMenu(1094316046L);
             Console.WriteLine($"Бот запущен в: @{botClient.GetMeAsync().Result.Username}");
             Console.ReadLine();
         }
         private async Task GetUpdates(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {
             token = cancellationToken;
-            // Only process Message updates
-            if (update.Message is not { } message)
-            {
-                return;
-            }
+           
             sender.CreateAnswere(update);
         }
         private Task GetErrors(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
@@ -51,25 +50,6 @@ namespace TelegramBotClean.Bot
 
             Console.WriteLine(ErrorMessage);
             return Task.CompletedTask;
-        }
-
-
-        private static async Task SendMessageAsync(ITelegramBotClient botClient, Message message, CancellationToken cancellationToken, string info, long idChat = -1)
-        {
-
-            long id = idChat == -1 ? message.Chat.Id : idChat;
-            try
-            {
-                Message sendArtwork = await botClient.SendTextMessageAsync(
-                chatId: id,
-                text: info,
-                parseMode: ParseMode.Html,
-                cancellationToken: cancellationToken);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Ошибка в отправке текстового сообщения: " + e.Message);
-            }
         }
      
     }
