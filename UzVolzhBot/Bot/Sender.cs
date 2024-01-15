@@ -16,12 +16,13 @@ namespace TelegramBotClean.Bot
         TelegramBotClient botClient;
         CancellationToken token;
         Users users;
+        BotDB botBase;
         public Sender(TelegramBotClient botClient, CancellationToken token)
         {
+            botBase = new BotDB();
             this.botClient = botClient;
             this.token = token;
-            DataTable t = new BotDB().GetAllUsers();
-            users = new Users(t);
+            users = new Users(botBase);
         }
 
         private async Task SendText(string text, long idChat)
@@ -79,7 +80,7 @@ namespace TelegramBotClean.Bot
                 );
         }
 
-
+        // Что можно делать извне
         public async Task SendMessage(MessageI message, long idChat)
         {
             if (message.IsText) SendText(message.Text,idChat);

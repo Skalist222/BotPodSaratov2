@@ -2,7 +2,8 @@
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
-using Log = TelegramBotClean.Data.Logger;
+using TelegramBotClean.Userses;
+using static TelegramBotClean.Data.Logger;
 
 
 namespace TelegramBotClean.Data
@@ -55,18 +56,18 @@ namespace TelegramBotClean.Data
         /// <returns></returns>
         protected bool CheckConnection()
         {
-            Log.Info("Попытка подключиться к базе данных " + con.Database);
+            Info("Попытка подключиться к базе данных " + con.Database);
             try
             {
                 con.Open();
                 con.Close();
-                Log.Info("Выполнено");
+                Info("Выполнено");
                 return true;
             }
             catch (Exception e)
             {
                 con.Close();
-                Log.Error(e.Message, "Connection Checking");
+                Error(e.Message, "Connection Checking");
                 return false;
             }
         }
@@ -79,30 +80,30 @@ namespace TelegramBotClean.Data
         {
             if (!IsReady)
             {
-                Log.Error("База не готова к выполнению!", "Execute");
+                Error("База не готова к выполнению!", "Execute");
                 SetNullOnElements();
                 return false;
             }
-            Log.Info("Попытка выполнить запрос: " + sql, "Execute", true);
+            Info("Попытка выполнить запрос: " + sql, "Execute", true);
             try
             {
                 con.Open();
-                Log.Info("Открыл подключение: " + sql, "Execute", true);
+                Info("Открыл подключение: " + sql, "Execute", true);
                 command = con.CreateCommand();
                 command.CommandText = sql;
                 int count = command.ExecuteNonQuery();
-                Log.Info("Выполнил запрос: " + sql, "Execute", true);
+                Info("Выполнил запрос: " + sql, "Execute", true);
                 con.Close();
 
-                Log.Info("Удалось выполнить запрос: " + sql, "Execute", true);
+                Info("Удалось выполнить запрос: " + sql, "Execute", true);
                 SetNullOnElements();
-                Log.Info("Закрыл подключение/очистил кэш: " + sql, "Execute", true);
+                Info("Закрыл подключение/очистил кэш: " + sql, "Execute", true);
                 return count > 0;
             }
             catch (Exception e)
             {
                 con.Close();
-                Log.Error(e.Message, "Execute");
+                Error(e.Message, "Execute");
                 SetNullOnElements();
                 return false;
             }
@@ -117,28 +118,28 @@ namespace TelegramBotClean.Data
             string met = new StackTrace().GetFrame(1).GetMethod().Name;
             if (!IsReady)
             {
-                Log.Error("База не готова к выполнению!", "Execute");
+                Error("База не готова к выполнению!", "Execute");
                 SetNullOnElements();
                 return null;
             }
-            Log.Info("Попытка выполнить запрос: " + sql + " База:" + con.Database, met);
+            Info("Попытка выполнить запрос: " + sql + " База:" + con.Database, met);
             try
             {
                 List<string> jsonFormatInfo = new List<string>();
                 con.Open();
-                Log.Info("Открыл подключение ", met);
+                Info("Открыл подключение ", met);
                 command = con.CreateCommand();
                 command.CommandText = sql;
                 adapter = DbProviderFactories.GetFactory(con).CreateDataAdapter();
-                Log.Info("Сформировал запрос: ", met);
+                Info("Сформировал запрос: ", met);
                 adapter.SelectCommand = command;
                 DataTable t = new DataTable();
                 adapter.Fill(t);
-                Log.Info("Выполнил запрос: ", met);
+                Info("Выполнил запрос: ", met);
                 con.Close();
-                Log.Info("Закрыл подключение: ", met);
-                Log.Info("Удалась попытка выполнить запрос: ", met);
-                Log.InfoStop();
+                Info("Закрыл подключение: ", met);
+                Info("Удалась попытка выполнить запрос: ", met);
+                InfoStop();
                 if (t.Rows.Count != 0)
                 {
                     SetNullOnElements();
@@ -146,7 +147,7 @@ namespace TelegramBotClean.Data
                 }
                 else
                 {
-                    Log.Error("По запросу " + sql + " ничего не найдено");
+                    Error("По запросу " + sql + " ничего не найдено");
                     SetNullOnElements();
                     return new DataTable();
                 }
@@ -154,7 +155,7 @@ namespace TelegramBotClean.Data
             catch (Exception e)
             {
                 con.Close();
-                Log.Error(e.Message, met);
+                Error(e.Message, met);
                 return new DataTable();
             }
         }
@@ -198,7 +199,7 @@ namespace TelegramBotClean.Data
                 try { return float.Parse(valSt); }
                 catch (FormatException)
                 {
-                    Log.Error("не удалось получить float");
+                    Error("не удалось получить float");
                     return -1;
                 }
             }
@@ -212,7 +213,7 @@ namespace TelegramBotClean.Data
                 try { return int.Parse(valSt); }
                 catch (FormatException)
                 {
-                    Log.Error("не удалось получить int");
+                    Error("не удалось получить int");
                     return -1;
                 }
             }
@@ -277,7 +278,7 @@ namespace TelegramBotClean.Data
             }
             else
             {
-                Log.Error("");
+                Error("");
                 return new string[0];
             }
         }
@@ -296,7 +297,7 @@ namespace TelegramBotClean.Data
             }
             catch (Exception e)
             {
-                Log.Error(e.Message, "CreateConnection");
+                Error(e.Message, "CreateConnection");
                 return false;
             }
             return false;
@@ -305,58 +306,44 @@ namespace TelegramBotClean.Data
     public class BotDB : MSSQLDBWorker
     {
         public BotDB() : base(Config.PathToDBBot) { }
-        public DataTable GetAllUsers()
+      
+        public Users GetAllUsers()
         {
-            return SelectAllIn("users");
-        }
-    }
-    internal class Logger
-    {
-        public static bool FileLogEnabled = false;
-        public static bool segmentStart = false;
-        public static void Error(string msg, string method = "")
-        {
-
-            Debug.WriteLine("!!!!!!!!!!!!!!!!!!!!!!ERROR!!!!!!!!!!!!!!!!!!!!!!!!");
-            Debug.WriteLine(msg);
-            Debug.WriteLine("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-            InfoStop();
-
-            try { File.AppendAllText("log.txt", "error|" + DateTime.Now + "|" + msg + "!!!!!!!" + Environment.NewLine); }
-            catch { }
-
-        }
-        public static void Info(string msg, string method = "", bool segment = true)
-        {
-            if (!segment)
+            DataTable dbTable = SelectAllIn("users");
+            Users uRet = new Users();
+            for (int i = 0; i < dbTable.Rows.Count; i++)
             {
-                if (!segmentStart) Debug.WriteLine("````````````````````````info```````````````````````");
-                Debug.WriteLine(msg);
-                if (method != "") Debug.WriteLine("In method " + method);
-                Debug.WriteLine("___________________________________________________");
-                segmentStart = false;
-            }
-            else
-            {
-                if (!segmentStart)
+                User u = null;
+                DataRow r = dbTable.Rows[i];
+                string priv = r["privileges"].ToString().Trim();
+                
+                if (priv == "teen")
                 {
-                    segmentStart = true;
-                    Debug.WriteLine("````````````````````````info```````````````````````");
-                    if (method != "") Debug.WriteLine("In method " + method);
+                    u = new Teen(r);
                 }
-                Debug.WriteLine(msg);
+                else
+                if (priv == "teacher")
+                {
+                    u = new Teacher(r);
+                }
+                else
+                if (priv == "admin")
+                {
+                    u = new Admin(r);
+                }
+                else
+                {
+                    u = new DefaultUser(r);
+                }
+                uRet.Add(u);
             }
-            try
-            {
-                File.AppendAllText("log.txt", "info|" + DateTime.Now + "|" + msg + "" + Environment.NewLine);
-            }
-            catch { }
+            return uRet;
 
+            
+            
+            
         }
-        public static void InfoStop()
-        {
-            segmentStart = false;
-            Debug.WriteLine("___________________________________________________");
-        }
+
     }
+  
 }

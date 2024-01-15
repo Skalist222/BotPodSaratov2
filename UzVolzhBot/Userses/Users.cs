@@ -4,12 +4,43 @@ using System.Data;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TelegramBotClean.Data;
 
 namespace TelegramBotClean.Userses
 {
-    internal class Users:List<User>
+    public class Users:List<User>
     {
-        public Users(DataTable dbTable)
+        public string ToString()
+        {
+            if (this.Count == 0) return "empty";
+            else
+            {
+                return $"({this.Count}) Ученики:{CountTeen}, Учителя:{CountTeacher}, Прихожане:{this.Count-(CountTeacher+CountTeen)}";
+            }
+        }
+        public int CountTeacher {
+            get 
+            {
+                if (this.Count == 0) return 0;
+                else
+                {
+                    return this.Where(x => x.TypeUser == UserTypes.Teacher).Count();
+                }
+            } 
+        }
+        public int CountTeen
+        {
+            get
+            {
+                if (this.Count == 0) return 0;
+                else
+                {
+                    return this.Where(x => x.TypeUser == UserTypes.Teen).Count();
+                }
+            }
+        }
+        public Users() : base() { }
+        public Users(DataTable dbTable):base()
         {
             for (int i = 0; i < dbTable.Rows.Count; i++)
             {
@@ -36,6 +67,10 @@ namespace TelegramBotClean.Userses
                 }
                 this.Add(u);
             }
+        }
+        public Users(BotDB botBase):base()
+        {
+            this.AddRange(botBase.GetAllUsers());
         }
         public User? this[long id]
         {
