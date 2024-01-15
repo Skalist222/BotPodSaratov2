@@ -385,7 +385,7 @@ namespace TelegramBotClean.Data
             }
             return false;
         }
-
+        //
         //Commands
         public long GetIdCommandByName(Command c)
         {
