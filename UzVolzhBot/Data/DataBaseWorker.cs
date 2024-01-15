@@ -2,6 +2,7 @@
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
+using TelegramBotClean.Commandses;
 using TelegramBotClean.Userses;
 using static TelegramBotClean.Data.Logger;
 
@@ -159,7 +160,7 @@ namespace TelegramBotClean.Data
                 return new DataTable();
             }
         }
-        
+
         protected DataTable Select(string[] columns, string table, string where = "")
         {
             string columnsStr = string.Join(", ",columns);
@@ -179,7 +180,22 @@ namespace TelegramBotClean.Data
             string sqlCommandString = string.Join(" ", new string[] { "Select * FROM", table, WhereString, ";" });
             return Select(sqlCommandString);
         }
-
+        protected string[] ColumnOnTableAsStringArray(string table, string column, string where = "")
+        {
+            DataTable t = Select(column,table, where);
+            if (t.Rows.Count == 0) return new string[0];
+            else
+            {
+                return t.AsEnumerable().Select(s => s[column].ToString()).ToArray();
+            }
+        }
+        protected string SelectFirstString(string table, string column, string where = "")
+        {
+            DataTable t = SelectAllIn(table,where);
+            if (t.Rows.Count == 0) return "";
+            else return t.Rows[0][column].ToString();
+        }
+        
 
 
 
@@ -306,7 +322,8 @@ namespace TelegramBotClean.Data
     }
     public class BotDB : MSSQLDBWorker
     {
-        public BotDB() : base(Config.PathToDBBot) { }
+        Random r;
+        public BotDB(Random r) : base(Config.PathToDBBot) { this.r = r; }
         
         public Users GetAllUsers()
         {
@@ -367,6 +384,37 @@ namespace TelegramBotClean.Data
                     $"({user.Id},'{user.NickName}','{user.Lastname}','{user.FirstName}','-',1,'{user.TypeUser.Name}','{user.UniqName}',0)");
             }
             return false;
+        }
+
+        //Commands
+        public long GetIdCommandByName(Command c)
+        {
+            DataTable t = Select("id", "Commands", $"textCommand ='{c.Name}'");
+            if (t.Rows.Count == 0) return -1L;
+            else 
+            {
+                try
+                {
+                    return Convert.ToInt64(t.Rows[0][0].ToString());
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Ошибка форматирования в получении айди команды GetIdCommandByName");
+                    return -1L;
+                }
+            }
+        }
+        //Answers
+        public DataTable GetAllAnswersCommand()
+        {
+            return SelectAllIn("Answere_word");
+        }
+        public string GetRandomAnswer(Command command)
+        {
+            long idcommandInBase = GetIdCommandByName(command);
+            if (idcommandInBase == -1) return "CommandNotFound";
+            string[] answers = ColumnOnTableAsStringArray("Ansvere_word", "word","idCommand="+idcommandInBase);
+            return answers[r.Next(0, answers.Length)];
         }
 
     }

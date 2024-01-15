@@ -14,16 +14,19 @@ namespace TelegramBotClean.Bot
 {
     public class Sender
     {
+        Random random;
         TelegramBotClient botClient;
         CancellationToken token;
         Users users;
         BotDB botBase;
         public Sender(TelegramBotClient botClient, CancellationToken token)
         {
-            botBase = new BotDB();
+            random = new Random();
+            botBase = new BotDB(random);
             this.botClient = botClient;
             this.token = token;
             users = new Users(botBase);
+
         }
 
         private async Task SendText(string text, long idChat)
@@ -174,6 +177,7 @@ namespace TelegramBotClean.Bot
                 }
                 if (!select && receivedMes.Commands.Is("мем"))
                 {
+                    toSendMes.SetText(botBase.GetRandomAnswer(Commands.MemCommand));
                     SendAdminMessage("Получена команда мем");
                     Console.WriteLine("Команда мем");
                     select = true;
@@ -209,7 +213,7 @@ namespace TelegramBotClean.Bot
                 }
                 else
                 {
-                    if(receivedMes.Text !="") SendMessage(toSendMes, receivedMes.SenderId);
+                    if(toSendMes.Text !="") SendMessage(toSendMes, receivedMes.SenderId);
                 }
             }
             else
