@@ -8,7 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Bot\Sender.cs~RF4b12019.TMP" />
+    <None Remove="BotDir\Sender.cs~RF4b12019.TMP" />
   </ItemGroup>
 
   <ItemGroup>
