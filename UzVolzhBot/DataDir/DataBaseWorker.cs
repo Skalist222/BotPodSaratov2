@@ -2,10 +2,12 @@
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
+using Telegram.Bot.Types;
 using TelegramBotClean.Commandses;
+using TelegramBotClean.MemDir;
 using TelegramBotClean.Userses;
 using static TelegramBotClean.Data.Logger;
-
+using User = TelegramBotClean.Userses.User;
 
 namespace TelegramBotClean.Data
 {
@@ -99,6 +101,7 @@ namespace TelegramBotClean.Data
                 Info("Удалось выполнить запрос: " + sql, "Execute", true);
                 SetNullOnElements();
                 Info("Закрыл подключение/очистил кэш: " + sql, "Execute", true);
+                InfoStop();
                 return count > 0;
             }
             catch (Exception e)
@@ -160,6 +163,10 @@ namespace TelegramBotClean.Data
                 return new DataTable();
             }
         }
+        
+
+
+
 
         protected DataTable Select(string[] columns, string table, string where = "")
         {
@@ -196,9 +203,6 @@ namespace TelegramBotClean.Data
             else return t.Rows[0][column].ToString();
         }
         
-
-
-
         protected string SelectOneString(string sql)
         {
             DataTable t = Select(sql);
@@ -267,6 +271,75 @@ namespace TelegramBotClean.Data
             else return 0;
         }
 
+        protected bool InsertInto(string table, string[] columns, object[] values)
+        {
+            if (columns.Length != values.Length)
+            {
+                Error("Получено разное количество столбцов и значений", "InsertInto");
+                return false;
+            }
+            else
+            {
+                List<string> valuesValid = new List<string>();
+                DataTable tableInfo = GetInfoTable(table);
+                if (tableInfo.Rows.Count !=0)
+                {
+                    //сравнение типов данных
+                    for (int i = 0; i < columns.Length; i++)
+                    {
+                        // проверка, есть ли вообще такая колонка
+                        EnumerableRowCollection<DataRow> InfoColumn = tableInfo.AsEnumerable()
+                        .Where(el => el["COLUMN_NAME"].ToString().ToLower() == columns[i].ToLower());
+                        if (InfoColumn.Count() == 0)
+                        {
+                            Error($"Колонка {columns[i]} не найдена", "InsertInto");
+                            return false;
+                        }
+                        // проверка соответствия типа
+                        string aaa = values[i].GetType().ToString().ToLower();
+                        string typecol = aaa switch
+                        {
+                            "system.string" => "nvarchar",
+                            "system.int32" => "bigint",
+                            "system.int64" => "bigint",
+                            "system.datetime" => "datetime",
+                            "system.bool" => "bit",
+                            _ => "nvarchar"
+                        };
+                        DataRow infoColumn = InfoColumn.First();
+                        string realColType = infoColumn["DATA_TYPE"].ToString();
+                        if (realColType != typecol)
+                        {
+                            Error($"Введенное значение {values[i]} не соответствует типу колонки {infoColumn["COLUMN_NAME"]}", "InsertInto");
+                            return false;
+                        }
+                        string validValue = realColType switch
+                        {
+                            "nvarchar" => $"N'{values[i]}'",
+                            "bigint" => $"{values[i]}",
+                            "datetime" => $"'{Convert.ToDateTime(values[i]).ToString("yyyy-MM-dd HH:mm")}'",
+                            "bit" => $"{values[i]}",
+                            _ => "nvarchar"
+                        };
+                        valuesValid.Add(validValue);
+                    }
+                    string sqlQuery = $"Insert Into {table}({string.Join(",", columns)}) values({string.Join(",", valuesValid)})";
+
+                    return Execute(sqlQuery);
+
+                }
+                else
+                {
+                    Error($"Таблица ({table}) не найдена", "InsertInto");
+                    return false;
+                }
+               
+                return false;
+            }
+        }
+
+
+
         /// <summary>
         /// Полоучить все таблицы базы данных
         /// </summary>
@@ -274,8 +347,12 @@ namespace TelegramBotClean.Data
         protected DataTable GetTables()
         {
             DataTable t = new DataTable();
-            t = Select("SHOW TABLES");
+            t = Select("SELECT table_name, table_schema, table_type\r\nFROM information_schema.tables\r\nORDER BY table_name ASC;");
             return t;
+        }
+        protected DataTable GetInfoTable(string table)
+        {
+            return Select($"select *\r\nfrom INFORMATION_SCHEMA.COLUMNS\r\nwhere TABLE_NAME='{table}'");
         }
         /// <summary>
         /// Получает список всех таблиц в базе данных
@@ -325,6 +402,7 @@ namespace TelegramBotClean.Data
         Random r;
         public BotDB(Random r) : base(Config.PathToDBBot) { this.r = r; }
         
+        //Users
         public Users GetAllUsers()
         {
             DataTable dbTable = SelectAllIn("users");
@@ -381,11 +459,11 @@ namespace TelegramBotClean.Data
             {
                 return Execute($"Insert Into users(Id,nick,lastName,firstName,lastStih,spam,privileges,uniqName,ban)" +
                     $"values" +
-                    $"({user.Id},'{user.NickName}','{user.Lastname}','{user.FirstName}','-',1,'{user.TypeUser.Name}','{user.UniqName}',0)");
+                    $"({user.Id},N'{user.NickName}',N'{user.Lastname}',N'{user.FirstName}','-',1,N'{user.TypeUser.Name}',N'{user.UniqName}',0)");
             }
             return false;
         }
-        //asd
+     
         //Commands
         public long GetIdCommandByName(Command c)
         {
@@ -404,6 +482,7 @@ namespace TelegramBotClean.Data
                 }
             }
         }
+
         //Answers
         public DataTable GetAllAnswersCommand()
         {
@@ -416,6 +495,22 @@ namespace TelegramBotClean.Data
             string[] answers = ColumnOnTableAsStringArray("Ansvere_word", "word","idCommand="+idcommandInBase);
             return answers[r.Next(0, answers.Length)];
         }
+
+        //MemMessages
+        public Mems GetAllMemMessages()
+        {
+            DataTable t = Select("MemMessages");
+            return new Mems(t);
+        }
+        public bool CreateMemMessage(Mem mem)
+        {
+            return Execute("Insert Into MemMessage(fileId,idMessage) values()");
+        }
+        public bool ExecuteValid()
+        {
+            return InsertInto("MemMessages",new string[] { "fileId","idMessage"},new object[]{"text",159});
+        }
+        
 
     }
   

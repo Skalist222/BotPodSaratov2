@@ -80,68 +80,8 @@ namespace TelegramBotClean.Messages
             {
                 //получено обычное сообщение или нажата кнопка ОСНОВНОГО меню
                 Message mes = up.Message;
-                senderId = mes.From.Id;
-                MessageType mesType = mes.Type;
-
-                if (mesType == MessageType.Photo)
-                {
-                    text = mes.Caption ?? "";// Если Описание к фото было, то заполняем текст описанием
-                    string.Join(text, text);
-                    Telegram.Bot.Types.File fileInfo = botClient.GetFileAsync(mes.Photo[mes.Photo.Length - 1].FileId).Result;
-                    string filePath = fileInfo.FilePath;
-                    string newNameFile = Directory.GetCurrentDirectory() + "\\" + fileInfo.FileUniqueId[0..15] + " " + Path.GetFileName(filePath);
-                    Bitmap bm;
-                    using (FileStream fileStream = new FileStream(newNameFile, FileMode.Create))
-                    {
-                        botClient.DownloadFileAsync(
-                            filePath: filePath,
-                            destination: fileStream,
-                            cancellationToken: token).GetAwaiter().GetResult();
-                        bm = (Bitmap)Bitmap.FromStream(fileStream);
-                        photo = new Bitmap(bm);
-                        bm.Dispose();
-                        bm = null;
-                    }
-                }
-                if (mesType == MessageType.Text)
-                {
-                    text = mes.Text;
-                    string cleanText = text.Replace(Config.InvizibleChar, "");
-                    commands = Commands.SelectCommands(cleanText);//Получаем команды
-                    // проверяю не команда ли это
-                    
-                    if (text![0].ToString() == Config.InvizibleChar)
-                    {
-                        // Значит это команда!
-                        if (commands.ToString() == "clean")
-                        {
-                            //Команда не определена
-                        }
-                        else
-                        {
-                            command = commands.ToString();
-                        }
-                    }
-
-                    if (commands.ToString() == "clean")
-                    {
-                        //получен просто текст
-                    }
-                    else
-                    { 
-                        // Команда из сообщения
-                        command = commands.ToString();
-                    }
-
-
-
-
-                }
-                if (mesType == MessageType.Sticker)
-                {
-                    text = mes.Sticker!.FileId;
-                    smile = mes.Sticker!.Emoji ?? "!";
-                }
+                //Так делать нельзя, но мне так удобнее
+                SetParamFromTelegramMessage(mes, botClient, token);
             }
             else
             {
@@ -156,7 +96,59 @@ namespace TelegramBotClean.Messages
                 }
             }
         }
+        public MessageI(Message mes, TelegramBotClient botClient, CancellationToken token)
+        {
+            if (mes is null) return;
+            SetParamFromTelegramMessage(mes, botClient, token);
+        }
+        public void SetParamFromTelegramMessage (Message mes, TelegramBotClient botClient, CancellationToken token)
+        {
+            senderId = mes.From.Id;
+            MessageType mesType = mes.Type;
 
+            if (mesType == MessageType.Photo)
+            {
+                text = mes.Caption ?? "";// Если Описание к фото было, то заполняем текст описанием
+                string.Join(text, text);
+                SaveImage(botClient, mes, token, ref photo);
+            }
+            if (mesType == MessageType.Text)
+            {
+                text = mes.Text;
+                string cleanText = text.Replace(Config.InvizibleChar, "");
+                commands = Commands.SelectCommands(cleanText);//Получаем команды
+                                                              // проверяю не команда ли это
+
+                if (text![0].ToString() == Config.InvizibleChar)
+                {
+                    // Значит это команда!
+                    if (commands.ToString() == "clean")
+                    {
+                        //Команда не определена
+                    }
+                    else
+                    {
+                        command = commands.ToString();
+                    }
+                }
+
+                if (commands.ToString() == "clean")
+                {
+                    //получен просто текст
+                }
+                else
+                {
+                    // Команда из сообщения
+                    command = commands.ToString();
+                }
+
+            }
+            if (mesType == MessageType.Sticker)
+            {
+                smile = mes.Sticker!.Emoji ?? "!";
+            }
+        }
+        
         /// <summary>
         /// Определяет есть ли в списке полученных команд введенная
         /// </summary>
@@ -176,6 +168,29 @@ namespace TelegramBotClean.Messages
         public static bool operator &(MessageI m, Command c)
         {
             return m.Commands.FirstEqual(c);
+        }
+        public static void SaveImage(TelegramBotClient botClient,Message mes,CancellationToken token,ref Bitmap photo)
+        {
+            Telegram.Bot.Types.File fileInfo = null;
+            if (mes.Type == MessageType.Photo)
+            {
+                fileInfo = botClient.GetFileAsync(mes.Photo[mes.Photo.Length - 1].FileId).Result;
+            }
+            
+            string filePath = fileInfo.FilePath;
+            string newNameFile = Directory.GetCurrentDirectory() + "\\" + fileInfo.FileUniqueId[0..15] + " " + Path.GetFileName(filePath);
+            Bitmap bm;
+            using (FileStream fileStream = new FileStream(newNameFile, FileMode.Create))
+            {
+                botClient.DownloadFileAsync(
+                    filePath: filePath,
+                    destination: fileStream,
+                    cancellationToken: token).GetAwaiter().GetResult();
+                bm = (Bitmap)Bitmap.FromStream(fileStream);
+                photo = new Bitmap(bm);
+                bm.Dispose();
+                bm = null;
+            }
         }
     }
    

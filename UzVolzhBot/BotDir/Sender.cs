@@ -26,7 +26,7 @@ namespace TelegramBotClean.Bot
             this.botClient = botClient;
             this.token = token;
             users = new Users(botBase);
-
+            botBase.ExecuteValid();
         }
 
         private async Task SendText(string text, long idChat)
@@ -144,8 +144,6 @@ namespace TelegramBotClean.Bot
                 // если стоит | то проверяется есть ли среди команд введенная
 
                 bool select = false;// определяет, найдена ли нужная команда
-
-
                 // Тут получение команд
                 if (!select && receivedMes.Commands.Is("старт"))
                 {
@@ -194,7 +192,7 @@ namespace TelegramBotClean.Bot
                     toSendMes.SetText(Config.Info.Text);
                     select = true;
                 }
-                if (!select && receivedMes.Commands.Is("добавить золотой стих"))
+                if (!select && receivedMes.Commands.Is("добыавить золотой стих"))
                 {
                     SendAdminMessage("Получена команда Добавление золотого стиха");
                     //добавление золотого стиха
@@ -218,6 +216,11 @@ namespace TelegramBotClean.Bot
             }
             else
             {
+                if (receivedMes.HavePhoto)
+                {
+                    Console.WriteLine("Пришло фото");
+                }
+                
                 SendAdminMessage("Пришло сообщение без команд");
             }
             DateTime finish = DateTime.Now;
