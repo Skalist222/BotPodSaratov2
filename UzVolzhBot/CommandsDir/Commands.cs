@@ -11,11 +11,12 @@ namespace TelegramBotClean.Commandses
             {"mem",new Command("/mem",new string[]{ "мем" })},
             {"gold",new Command("/gold",new string[]{ "золот","gold"})},
             {"verse",new Command("/verse",new string[]{ "стих","стиш"})},
-            {"add",new Command("/verse",new string[]{ "добав","+","add"})},
+            {"add",new Command("/add",new string[]{ "добав","+","add"})},
             {"bible",new Command("/bible",new string[]{ "библ","bibl"})},
             {"info",new Command("/info",new string[]{ "инфо","info"})},
             {"on",new Command("/on",new string[]{ "включ","on"})},
-            {"off",new Command("/off",new string[]{ "выключ","отключ","off"})}
+            {"off",new Command("/off",new string[]{ "выключ","отключ","off"})},
+            {"thenks",new Command("/thanks",new string[]{ "спасибо","спс","thenks"})}
         };
 
         //Для полноценной команды в программу нужно:
@@ -25,6 +26,11 @@ namespace TelegramBotClean.Commandses
 
         //Все команды
         #region Все команды (Геттеры)
+
+        public static Command Get(string name)
+        {
+            return allCommands[name];
+        }
         // геттеры нужны, чтобы обращаться к существующим командам
         /// <summary>
         /// Геттер команды "мем"
@@ -43,7 +49,7 @@ namespace TelegramBotClean.Commandses
         public static Command InfoCommand { get { return allCommands["info"]; } }
         public static Command StartCommand { get { return allCommands["start"]; } }
         #endregion
-
+        
 
         #region Комплексные команды
         public static Commands GoldVerseCommand { get { return GoldCommand + VerseCommand; } }

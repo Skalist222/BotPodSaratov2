@@ -109,38 +109,15 @@ namespace TelegramBotClean.Messages
             if (mesType == MessageType.Photo)
             {
                 text = mes.Caption ?? "";// Если Описание к фото было, то заполняем текст описанием
+                string cleanText = text.Replace(Config.InvizibleChar, "");
                 string.Join(text, text);
                 SaveImage(botClient, mes, token, ref photo);
+                SelectCommands(ref commands, text);
             }
             if (mesType == MessageType.Text)
             {
                 text = mes.Text;
-                string cleanText = text.Replace(Config.InvizibleChar, "");
-                commands = Commands.SelectCommands(cleanText);//Получаем команды
-                                                              // проверяю не команда ли это
-
-                if (text![0].ToString() == Config.InvizibleChar)
-                {
-                    // Значит это команда!
-                    if (commands.ToString() == "clean")
-                    {
-                        //Команда не определена
-                    }
-                    else
-                    {
-                        command = commands.ToString();
-                    }
-                }
-
-                if (commands.ToString() == "clean")
-                {
-                    //получен просто текст
-                }
-                else
-                {
-                    // Команда из сообщения
-                    command = commands.ToString();
-                }
+                SelectCommands(ref commands, text);
 
             }
             if (mesType == MessageType.Sticker)
@@ -169,7 +146,7 @@ namespace TelegramBotClean.Messages
         {
             return m.Commands.FirstEqual(c);
         }
-        public static void SaveImage(TelegramBotClient botClient,Message mes,CancellationToken token,ref Bitmap photo)
+        private void SaveImage(TelegramBotClient botClient,Message mes,CancellationToken token,ref Bitmap photo)
         {
             Telegram.Bot.Types.File fileInfo = null;
             if (mes.Type == MessageType.Photo)
@@ -190,6 +167,35 @@ namespace TelegramBotClean.Messages
                 photo = new Bitmap(bm);
                 bm.Dispose();
                 bm = null;
+            }
+        }
+        private void SelectCommands(ref Commands commands,string text)
+        {
+            string cleanText = text.Replace(Config.InvizibleChar, "");
+            commands = Commands.SelectCommands(cleanText);//Получаем команды
+                                                          // проверяю не команда ли это
+
+            if (text![0].ToString() == Config.InvizibleChar)
+            {
+                // Значит это команда!
+                if (commands.ToString() == "clean")
+                {
+                    //Команда не определена
+                }
+                else
+                {
+                    command = commands.ToString();
+                }
+            }
+
+            if (commands.ToString() == "clean")
+            {
+                //получен просто текст
+            }
+            else
+            {
+                // Команда из сообщения
+                command = commands.ToString();
             }
         }
     }

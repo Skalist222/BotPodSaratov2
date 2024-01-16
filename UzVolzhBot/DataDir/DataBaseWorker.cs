@@ -495,6 +495,7 @@ namespace TelegramBotClean.Data
             string[] answers = ColumnOnTableAsStringArray("Ansvere_word", "word","idCommand="+idcommandInBase);
             return answers[r.Next(0, answers.Length)];
         }
+      
 
         //MemMessages
         public Mems GetAllMemMessages()
@@ -506,6 +507,18 @@ namespace TelegramBotClean.Data
         {
             return Execute("Insert Into MemMessage(fileId,idMessage) values()");
         }
+
+
+
+
+
+
+
+
+
+
+
+
         public bool ExecuteValid()
         {
             return InsertInto("MemMessages",new string[] { "fileId","idMessage"},new object[]{"text",159});

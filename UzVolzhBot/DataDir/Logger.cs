@@ -15,6 +15,7 @@ namespace TelegramBotClean.Data
         {
 
             Debug.WriteLine("!!!!!!!!!!!!!!!!!!!!!!ERROR!!!!!!!!!!!!!!!!!!!!!!!!");
+            if(method!="")Debug.WriteLine(method);
             Debug.WriteLine(msg);
             Debug.WriteLine("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
             InfoStop();

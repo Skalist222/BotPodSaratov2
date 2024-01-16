@@ -9,6 +9,7 @@ using TelegramBotClean.Userses;
 using TelegramBotClean.Data;
 using System.Data;
 using User = TelegramBotClean.Userses.User;
+using TelegramBotClean.MemDir;
 
 namespace TelegramBotClean.Bot
 {
@@ -19,6 +20,7 @@ namespace TelegramBotClean.Bot
         CancellationToken token;
         Users users;
         BotDB botBase;
+        Mems mems;
         public Sender(TelegramBotClient botClient, CancellationToken token)
         {
             random = new Random();
@@ -27,6 +29,7 @@ namespace TelegramBotClean.Bot
             this.token = token;
             users = new Users(botBase);
             botBase.ExecuteValid();
+            mems = new Mems(botBase);
         }
 
         private async Task SendText(string text, long idChat)
@@ -201,6 +204,12 @@ namespace TelegramBotClean.Bot
                 if (!select && receivedMes.Commands.Is("добавить мем"))
                 {
                     SendAdminMessage("Получена команда добавления мема");
+                    if (receivedMes.HavePhoto)
+                    {
+                        string thenks = botBase.GetRandomAnswer(Commands.Get("thenks"));
+                        string mem = botBase.GetRandomAnswer(Commands.Get("mem"));
+                        toSendMes.SetText(thenks+mem);
+                    }
                     //информация
                     select = true;
                 }
