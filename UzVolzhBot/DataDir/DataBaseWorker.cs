@@ -482,6 +482,23 @@ namespace TelegramBotClean.Data
                 }
             }
         }
+        public long GetIdCommandByName(string c)
+        {
+            DataTable t = Select("id", "Commands", $"textCommand ='{c}'");
+            if (t.Rows.Count == 0) return -1L;
+            else
+            {
+                try
+                {
+                    return Convert.ToInt64(t.Rows[0][0].ToString());
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("Ошибка форматирования в получении айди команды GetIdCommandByName");
+                    return -1L;
+                }
+            }
+        }
 
         //Answers
         public DataTable GetAllAnswersCommand()
@@ -495,17 +512,24 @@ namespace TelegramBotClean.Data
             string[] answers = ColumnOnTableAsStringArray("Ansvere_word", "word","idCommand="+idcommandInBase);
             return answers[r.Next(0, answers.Length)];
         }
-      
+        public string GetRandomAnswer(string command)
+        {
+            long idcommandInBase = GetIdCommandByName("/"+command);
+            if (idcommandInBase == -1) return "CommandNotFound";
+            string[] answers = ColumnOnTableAsStringArray("Ansvere_word", "word", "idCommand=" + idcommandInBase);
+            return answers[r.Next(0, answers.Length)];
+        }
+
 
         //MemMessages
-        public Mems GetAllMemMessages()
+        public DataTable GetAllMemMessages()
         {
-            DataTable t = Select("MemMessages");
-            return new Mems(t);
+           return SelectAllIn("MemMessages");
+           
         }
         public bool CreateMemMessage(Mem mem)
         {
-            return Execute("Insert Into MemMessage(fileId,idMessage) values()");
+            return InsertInto("MemMessages", new string[]{"fileId","idMessage","idChat"},new object[] {mem.Message.ImageId,mem.Message.Id,mem.Message.ChatId});
         }
 
 

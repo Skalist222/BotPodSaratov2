@@ -3,17 +3,16 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TelegramBotClean.Messages;
 
 namespace TelegramBotClean.MemDir
 {
     public class Mem
     {
-        string FileId { get; }
-        long IdMessage { get; }
-        public Mem(string fileId, long idMessage)
+        public MessageI Message { get; }
+        public Mem(MessageI message)
         {
-            FileId = fileId;
-            IdMessage = idMessage;
+            Message = message;
         }
     }
 }

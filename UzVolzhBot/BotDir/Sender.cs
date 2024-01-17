@@ -15,21 +15,22 @@ namespace TelegramBotClean.Bot
 {
     public class Sender
     {
-        Random random;
-        TelegramBotClient botClient;
-        CancellationToken token;
-        Users users;
-        BotDB botBase;
-        Mems mems;
+        Random Random { get; }
+        TelegramBotClient botClient { get; }
+        CancellationToken Token { get; }
+        Users Users { get; }
+        BotDB BotBase;
+        Mems Mems;
+
+      
         public Sender(TelegramBotClient botClient, CancellationToken token)
         {
-            random = new Random();
-            botBase = new BotDB(random);
+            Random = new Random();
+            BotBase = new BotDB(Random);
             this.botClient = botClient;
-            this.token = token;
-            users = new Users(botBase);
-            botBase.ExecuteValid();
-            mems = new Mems(botBase);
+            this.Token = token;
+            Users = new Users(BotBase);          
+            Mems = new Mems(BotBase,botClient,token);
         }
 
         private async Task SendText(string text, long idChat)
@@ -91,7 +92,7 @@ namespace TelegramBotClean.Bot
         public async Task SendMessage(MessageI message, long idChat)
         {
             if (message.IsText) SendText(message.Text,idChat);
-            if (message.IsPhoto) SendImage(message.Photo, idChat);
+            if (message.HavePhoto) SendImage(message.Photo, idChat,message.Text);
         }
         public async Task SendMessage(string message, long idChat)
         {
@@ -131,12 +132,12 @@ namespace TelegramBotClean.Bot
         public async void CreateAnswere(Update up)
         {
             DateTime start = DateTime.Now;
-            MessageI receivedMes = new MessageI(up,botClient,token);// Полученное сообщение
+            MessageI receivedMes = new MessageI(up,botClient,Token);// Полученное сообщение
             MessageI toSendMes = new MessageI("");// сообщение которое мы отправим в обратку
 
             Telegram.Bot.Types.User userTelegram = up.Message is not null ? up.Message.From : up.CallbackQuery.From;
             //Если пользователя нет в базе данных
-            User us = botBase.GetUser(receivedMes.SenderId);
+            User user = BotBase.GetUser(receivedMes.SenderId);
 
 
             //Во первых проверяем есть ли команда
@@ -145,19 +146,20 @@ namespace TelegramBotClean.Bot
                 // В данном случае & проверяет, есть ли в командах сообщения команда МЕМ
                 // если стоит &  значит проверяется первая найденая команда
                 // если стоит | то проверяется есть ли среди команд введенная
-
+                string comString = receivedMes.Commands.ToString();
+                
                 bool select = false;// определяет, найдена ли нужная команда
                 // Тут получение команд
                 if (!select && receivedMes.Commands.Is("старт"))
                 {
-                    SendAdminMessage("Получена команда мем");
+                    SendAdminMessage("Получена команда старт");
                     // При начале работы бота или при нажатии на кнопку старт
-                    if (us == null)
+                    if (user == null)
                     {
-                        if (botBase.CreateUser(new User(userTelegram)))
+                        if (BotBase.CreateUser(new User(userTelegram)))
                         {
-                            users.Add(botBase.GetUser(userTelegram.Id));
-                            SendAdminMessage("Создан новый пользователь " + users[userTelegram.Id].ToString());
+                            Users.Add(BotBase.GetUser(userTelegram.Id));
+                            SendAdminMessage("Создан новый пользователь " + Users[userTelegram.Id].ToString());
                             Console.WriteLine("Добавлен новый пользователь");
                             SendMenu(userTelegram.Id, "Привет, дорогой друг. Этот бот предназначен для учеников воскресной школы(подростков). Нажми /help чтобы разобраться, как работает бот.");
                         }
@@ -178,9 +180,9 @@ namespace TelegramBotClean.Bot
                 }
                 if (!select && receivedMes.Commands.Is("мем"))
                 {
-                    toSendMes.SetText(botBase.GetRandomAnswer(Commands.MemCommand));
                     SendAdminMessage("Получена команда мем");
                     Console.WriteLine("Команда мем");
+                    toSendMes = Mems.GetMessageRandomMem(random);
                     select = true;
                 }
                 if (!select && receivedMes.Commands.Is("золой стих"))
@@ -206,9 +208,16 @@ namespace TelegramBotClean.Bot
                     SendAdminMessage("Получена команда добавления мема");
                     if (receivedMes.HavePhoto)
                     {
-                        string thenks = botBase.GetRandomAnswer(Commands.Get("thenks"));
-                        string mem = botBase.GetRandomAnswer(Commands.Get("mem"));
-                        toSendMes.SetText(thenks+mem);
+                        if (Mems.Add(new Mem(receivedMes)))
+                        {
+                            string thenks = BotBase.GetRandomAnswer(Commands.Get("thenks"));
+                            string mem = BotBase.GetRandomAnswer(Commands.Get("mem"));
+                            toSendMes.SetText(thenks +" "+ mem);
+                        }
+                        else
+                        {
+                            toSendMes.SetText("Ой прости.. что-то пошло не так, не смог добавить мем...");
+                        }
                     }
                     //информация
                     select = true;

@@ -4,6 +4,7 @@ namespace TelegramBotClean.Commandses
 {
     public class Commands : CommandList
     {
+
         // Сюда писать новые команды
         private static Dictionary<string, Command> allCommands = new Dictionary<string, Command>
         {
@@ -16,7 +17,14 @@ namespace TelegramBotClean.Commandses
             {"info",new Command("/info",new string[]{ "инфо","info"})},
             {"on",new Command("/on",new string[]{ "включ","on"})},
             {"off",new Command("/off",new string[]{ "выключ","отключ","off"})},
+            {"spam",new Command("/spam",new string[]{ "спам","spam"})},
             {"thenks",new Command("/thanks",new string[]{ "спасибо","спс","thenks"})}
+        };
+        public static Dictionary<string, Command> complexCommands = new Dictionary<string, Command>
+        {
+            {"addMem",new Command("/addMem",new string[]{ "+ мем"})},
+            {"goldverse",new Command("/goldverse",new string[]{ "золотой стих"})},
+            {"addGoldverse",new Command("/addGoldverse",new string[]{ "золотой стих"})}
         };
 
         //Для полноценной команды в программу нужно:
@@ -52,8 +60,10 @@ namespace TelegramBotClean.Commandses
         
 
         #region Комплексные команды
-        public static Commands GoldVerseCommand { get { return GoldCommand + VerseCommand; } }
+        public static Commands GoldVerseCommands { get { return GoldCommand + VerseCommand; } }
         public static Commands AddGoldVerseCommand { get { return AddCommand + GoldVerseCommand; } }
+        public static Command GoldVerseCommand { get { return allCommands["goldVerse"]; } }
+        
         #endregion
       
 

@@ -1,11 +1,16 @@
-﻿namespace TelegramBotClean.Commandses
+﻿using Telegram.Bot;
+using Telegram.Bot.Types;
+using TelegramBotClean.Bot;
+using TelegramBotClean.Userses;
+
+namespace TelegramBotClean.Commandses
 {
     public class Command
     {
         string name;
         List<string> texts;
         string description;
-        Action worker;
+        Action<TelegramBotClient,Sender,Update,Users> worker;
 
         public string ToString()
         {
@@ -13,7 +18,6 @@
         }
         public string Name { get { return name; } }
         public string Description { get { return description; } }
-        public Action Worker { get { return worker; } }
 
 
         public void SetVariants(string[] variants)
@@ -35,8 +39,7 @@
 
         }
 
-
-        public Command(string name, string[] texts = null, string description = "")
+        public Command(string name, string[] texts = null, Action<TelegramBotClient, Sender, Update, Users> worker = null, string description = "")
         {
             this.name = name;
             this.description = description;
@@ -46,13 +49,9 @@
                 this.texts = new List<string>() { name };
                 this.texts.AddRange(texts!.ToList());
             }
+            if(worker is not null) this.worker = worker;
         }
-        public Command(string name, string firstTexts, string description)
-        {
-            this.name = name;
-            this.texts = new List<string>() { firstTexts };
-            this.description = description;
-        }
+       
 
         public bool Check(string variantText)
         {
@@ -72,7 +71,10 @@
             }
             return false;
         }
-
+        public void Execute(TelegramBotClient botClient,Sender sender,Update up,Users users)
+        {
+            worker(botClient,sender,up,users);
+        }
 
 
 
@@ -88,6 +90,7 @@
         {
             Commands commands = new Commands();
             commands.Add(c1, c2);
+            
             return commands;
         }
         public static Commands operator +(Command c1, Commands cList)
