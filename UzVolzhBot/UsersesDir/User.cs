@@ -1,13 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Telegram.Bot.Requests;
-using Telegram.Bot.Types;
+﻿using System.Data;
 using TelegramBotClean.Commandses;
-using TelegramBotClean.Data;
 using TelegramBotClean.Messages;
 
 namespace TelegramBotClean.Userses
