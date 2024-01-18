@@ -3,11 +3,9 @@ using Telegram.Bot;
 using System.Drawing;
 using Telegram.Bot.Types.ReplyMarkups;
 using Telegram.Bot.Types.InputFiles;
-using TelegramBotClean.Commandses;
 using TelegramBotClean.Messages;
 using TelegramBotClean.Userses;
 using TelegramBotClean.Data;
-using System.Data;
 using User = TelegramBotClean.Userses.User;
 using TelegramBotClean.MemDir;
 
