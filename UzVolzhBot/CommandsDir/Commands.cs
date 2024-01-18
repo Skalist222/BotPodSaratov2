@@ -1,7 +1,4 @@
-﻿using Microsoft.Identity.Client;
-using System.Xml;
-using Telegram.Bot.Requests;
-using TelegramBotClean.CommandsDir;
+﻿using TelegramBotClean.CommandsDir;
 using static TelegramBotClean.CommandsDir.CommandsExecutor;
 
 namespace TelegramBotClean.Commandses

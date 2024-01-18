@@ -1,10 +1,5 @@
-﻿using Telegram.Bot;
-using Telegram.Bot.Types;
-using TelegramBotClean.Bot;
-using TelegramBotClean.Data;
-using TelegramBotClean.MemDir;
+﻿using TelegramBotClean.Bot;
 using TelegramBotClean.Messages;
-using TelegramBotClean.Userses;
 
 namespace TelegramBotClean.Commandses
 {

@@ -1,12 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Telegram.Bot;
-using Telegram.Bot.Types;
-using TelegramBotClean.Bot;
+﻿using TelegramBotClean.Bot;
 using TelegramBotClean.Commandses;
 using TelegramBotClean.Data;
 using TelegramBotClean.MemDir;
