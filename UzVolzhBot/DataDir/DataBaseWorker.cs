@@ -2,7 +2,6 @@
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
-using Telegram.Bot.Types;
 using TelegramBotClean.Commandses;
 using TelegramBotClean.MemDir;
 using TelegramBotClean.Userses;
