@@ -62,7 +62,7 @@ namespace TelegramBotClean.Messages
         public bool IsCommand { get { return command != "" && text == ""; } }
         public bool IsCommandInText { get { return command != "" && text != ""; } }
         public bool IsSticker { get { return smile != ""; } }
-        public bool HaveCommand { get { return command != ""; } }
+        public bool HaveCommand { get { return command != "" ; } }
         public bool HaveText { get { return text != ""; } }
         public bool HavePhoto { get { return photo is not null || imageId != ""; } }
 
@@ -90,15 +90,17 @@ namespace TelegramBotClean.Messages
                 Message mes = up.Message;
                 //Так делать нельзя, но мне так удобнее
                 SetParamFromTelegramMessage(mes, botClient, token);
+                SelectCommands(ref commands,text);
             }
             else
             {
                 if (up.CallbackQuery != null)
 
                 {// Нажата кнопка в сообщении
+                    text = up.CallbackQuery.Data;
                     senderUser = up.CallbackQuery.From;
                     senderId = senderUser.Id;
-                    command = up.CallbackQuery.Data;
+                    SelectCommands(ref commands, text);
                 }
                 else
                 {
@@ -121,17 +123,13 @@ namespace TelegramBotClean.Messages
             if (mesType == MessageType.Photo)
             {
                 text = mes.Caption ?? "";// Если Описание к фото было, то заполняем текст описанием
-                string cleanText = text.Replace(Config.InvizibleChar, "");
                 string.Join(text, text);
                 
                 SaveImage(botClient, mes, token);
-                SelectCommands(ref commands, text);
             }
             if (mesType == MessageType.Text)
             {
                 text = mes.Text;
-                SelectCommands(ref commands, text);
-
             }
             if (mesType == MessageType.Sticker)
             {
@@ -167,19 +165,23 @@ namespace TelegramBotClean.Messages
         {
             string cleanText = text.Replace(Config.InvizibleChar, "");
             commands = Commands.SelectCommands(cleanText);//Получаем команды
-                                                          // проверяю не команда ли это
-
+            // проверяю не команда ли это
             if (text![0].ToString() == Config.InvizibleChar)
             {
-                // Значит это команда!
+                // Значит это Нажата кнопка!
                 if (commands.ToString() == "clean")
                 {
                     //Команда не определена
+                    command = "commandNotFound";
                 }
                 else
                 {
                     command = commands.ToString();
                 }
+            }
+            else
+            {
+                command = commands.ToString();
             }
         }
 

@@ -11,7 +11,7 @@
                 string retString = this[0].Name;
                 for (int i = 1; i < this.Count; i++)
                 {
-                    retString += "|" + this[i].Name;
+                    retString +=  this[i].Name;
                 }
                 return retString;
             }

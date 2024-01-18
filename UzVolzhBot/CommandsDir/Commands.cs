@@ -1,30 +1,35 @@
 ﻿using Microsoft.Identity.Client;
+using System.Xml;
+using Telegram.Bot.Requests;
+using TelegramBotClean.CommandsDir;
+using static TelegramBotClean.CommandsDir.CommandsExecutor;
 
 namespace TelegramBotClean.Commandses
 {
     public class Commands : CommandList
     {
 
+        
         // Сюда писать новые команды
-        private static Dictionary<string, Command> allCommands = new Dictionary<string, Command>
+        private static Dictionary<string, Command> simpleCommands = new Dictionary<string, Command>
         {
-            {"start",new Command("/start",new string[]{ "старт","start"})},
-            {"mem",new Command("/mem",new string[]{ "мем" })},
-            {"gold",new Command("/gold",new string[]{ "золот","gold"})},
-            {"verse",new Command("/verse",new string[]{ "стих","стиш"})},
-            {"add",new Command("/add",new string[]{ "добав","+","add"})},
-            {"bible",new Command("/bible",new string[]{ "библ","bibl"})},
-            {"info",new Command("/info",new string[]{ "инфо","info"})},
-            {"on",new Command("/on",new string[]{ "включ","on"})},
-            {"off",new Command("/off",new string[]{ "выключ","отключ","off"})},
-            {"spam",new Command("/spam",new string[]{ "спам","spam"})},
-            {"thenks",new Command("/thanks",new string[]{ "спасибо","спс","thenks"})}
+            {"/start",new Command("/start",new string[]{ "старт","start"},ExecuteStart)},
+            {"/mem",new Command("/mem",new string[]{ "мем" },ExecuteMem)},
+            {"/gold",new Command("/gold",new string[]{ "золот","gold"},ExecuteUnknow)},
+            {"/verse",new Command("/verse",new string[]{ "стих","стиш"},ExecuteVerse)},
+            {"/add",new Command("/add",new string[]{ "добав","+","add"},ExecuteUnknow)},
+            {"/bible",new Command("/bible",new string[]{ "библ","bibl"})},
+            {"/info",new Command("/info",new string[]{ "инфо","info"},ExecuteInfo)},
+            {"/on",new Command("/on",new string[]{ "включ","on"}, ExecuteUnknow)},
+            {"/off",new Command("/off",new string[]{ "выключ","отключ","off"},ExecuteUnknow)},
+            {"/spam",new Command("/spam",new string[]{ "спам","spam"}, ExecuteUnknow)},
+            {"/thenks",new Command("/thanks",new string[]{ "спасибо","спс","thenks"}, ExecuteUnknow)}
         };
         public static Dictionary<string, Command> complexCommands = new Dictionary<string, Command>
         {
-            {"addMem",new Command("/addMem",new string[]{ "+ мем"})},
-            {"goldverse",new Command("/goldverse",new string[]{ "золотой стих"})},
-            {"addGoldverse",new Command("/addGoldverse",new string[]{ "золотой стих"})}
+            {"/add/mem",new Command("/addMem",new string[]{ "+ мем"},ExecuteAddMem    )},
+            {"/gold/verse",new Command("/goldverse",new string[]{ "золотой стих"},ExecuteGoldVerse)},
+            {"/add/gold/verse",new Command("/addGoldVerse",new string[]{ "добавить золотой стих"},ExecuteAddGoldVerse)}
         };
 
         //Для полноценной команды в программу нужно:
@@ -37,36 +42,39 @@ namespace TelegramBotClean.Commandses
 
         public static Command Get(string name)
         {
-            return allCommands[name];
+            return simpleCommands[name];
         }
         // геттеры нужны, чтобы обращаться к существующим командам
         /// <summary>
         /// Геттер команды "мем"
         /// </summary>
-        public static Command MemCommand { get { return allCommands["mem"]; } }
+        /// 
+        public static Command Unknow { get {
+                return new Command("clean",new string[] { }, CommandsExecutor.ExecuteUnknow);
+            } }
+        public static Command MemCommand { get { return simpleCommands["/mem"]; } }
         /// <summary>
         /// Геттер команды "золотой"
         /// </summary>
-        public static Command GoldCommand { get { return allCommands["gold"]; } }
+        public static Command GoldCommand { get { return simpleCommands["/gold"]; } }
         /// <summary>
         /// Геттер команды "Стих"
         /// </summary>
-        public static Command VerseCommand { get { return allCommands["verse"]; } }
-        public static Command AddCommand { get { return allCommands["add"]; } }
-        public static Command BibleCommand { get { return allCommands["bible"]; } }
-        public static Command InfoCommand { get { return allCommands["info"]; } }
-        public static Command StartCommand { get { return allCommands["start"]; } }
+        public static Command VerseCommand { get { return simpleCommands["/verse"]; } }
+        public static Command AddCommand { get { return simpleCommands["/add"]; } }
+        public static Command BibleCommand { get { return simpleCommands["/bible"]; } }
+        public static Command InfoCommand { get { return simpleCommands["/info"]; } }
+        public static Command StartCommand { get { return simpleCommands["/start"]; } }
+
         #endregion
         
 
         #region Комплексные команды
         public static Commands GoldVerseCommands { get { return GoldCommand + VerseCommand; } }
         public static Commands AddGoldVerseCommand { get { return AddCommand + GoldVerseCommand; } }
-        public static Command GoldVerseCommand { get { return allCommands["goldVerse"]; } }
-        
-        #endregion
-      
+        public static Command GoldVerseCommand { get { return complexCommands["/gold/verse"]; } }
 
+        #endregion
 
 
         #region Идентификаторы (проверка что именно это за команды)
@@ -75,6 +83,19 @@ namespace TelegramBotClean.Commandses
             Commands selected = Commands.SelectCommands(variativText);
             return selected == this;
         }
+        public Command AsCommand()
+        {
+            string construct = this.ToString();
+            
+            Command simple = simpleCommands.Where(x => x.Key == construct).FirstOrDefault()!.Value;
+            Command complex= complexCommands.Where(x => x.Key == construct).FirstOrDefault()!.Value;
+            if (simple is not null) return simple;
+            if (complex is not null) return complex;
+            //Если и один и второй нул, значит неизвестная
+            return Unknow;
+
+        }
+
 
         // Не уверен что они пригодятся, удалить если вдруг они не пригодились
         public bool IsMem { get { return this.FirstEqual(Commands.MemCommand); } }
@@ -97,7 +118,7 @@ namespace TelegramBotClean.Commandses
         {
             if (!clean)
             {
-                this.AddRange(allCommands.Select(el => el.Value).ToList());
+                this.AddRange(simpleCommands.Select(el => el.Value).ToList());
             }
         }
         #endregion

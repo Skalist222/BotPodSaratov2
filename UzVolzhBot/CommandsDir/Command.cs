@@ -1,6 +1,9 @@
 ﻿using Telegram.Bot;
 using Telegram.Bot.Types;
 using TelegramBotClean.Bot;
+using TelegramBotClean.Data;
+using TelegramBotClean.MemDir;
+using TelegramBotClean.Messages;
 using TelegramBotClean.Userses;
 
 namespace TelegramBotClean.Commandses
@@ -10,7 +13,8 @@ namespace TelegramBotClean.Commandses
         string name;
         List<string> texts;
         string description;
-        Action<TelegramBotClient,Sender,Update,Users> worker;
+        Action<Sender, MessageI> worker;
+        public Action<Sender, MessageI> Worker { get { return worker; } }
 
         public string ToString()
         {
@@ -18,8 +22,6 @@ namespace TelegramBotClean.Commandses
         }
         public string Name { get { return name; } }
         public string Description { get { return description; } }
-
-
         public void SetVariants(string[] variants)
         {
             texts.AddRange(variants);
@@ -39,7 +41,7 @@ namespace TelegramBotClean.Commandses
 
         }
 
-        public Command(string name, string[] texts = null, Action<TelegramBotClient, Sender, Update, Users> worker = null, string description = "")
+        public Command(string name, string[] texts = null, Action<Sender, MessageI> worker = null, string description = "")
         {
             this.name = name;
             this.description = description;
@@ -51,8 +53,6 @@ namespace TelegramBotClean.Commandses
             }
             if(worker is not null) this.worker = worker;
         }
-       
-
         public bool Check(string variantText)
         {
             for (int i = 0; i < texts.Count; i++)
@@ -71,9 +71,9 @@ namespace TelegramBotClean.Commandses
             }
             return false;
         }
-        public void Execute(TelegramBotClient botClient,Sender sender,Update up,Users users)
+        public void Execute(Sender sender, MessageI mes)
         {
-            worker(botClient,sender,up,users);
+            worker(sender, mes);
         }
 
 

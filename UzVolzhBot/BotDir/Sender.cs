@@ -15,14 +15,16 @@ namespace TelegramBotClean.Bot
 {
     public class Sender
     {
-        Random Random { get; }
+
+       
         TelegramBotClient botClient { get; }
         CancellationToken Token { get; }
-        Users Users { get; }
-        BotDB BotBase;
-        Mems Mems;
+        public Users Users { get; }
+        public BotDB BotBase { get; }
+        public Mems Mems { get; }
+        public Random Random { get; }
 
-      
+
         public Sender(TelegramBotClient botClient, CancellationToken token)
         {
             Random = new Random();
@@ -101,8 +103,7 @@ namespace TelegramBotClean.Bot
         public async Task SendAdminMessage(MessageI message)
         {
             long idChat = 1094316046L;
-            if (message.IsText) SendText(message.Text, idChat);
-            if (message.IsPhoto) SendImage(message.Photo, idChat);
+            SendMessage(message.Text, idChat);
         }
         public async Task SendAdminMessage(string message)
         {
@@ -143,94 +144,7 @@ namespace TelegramBotClean.Bot
             //Во первых проверяем есть ли команда
             if (receivedMes.HaveCommand)
             {
-                // В данном случае & проверяет, есть ли в командах сообщения команда МЕМ
-                // если стоит &  значит проверяется первая найденая команда
-                // если стоит | то проверяется есть ли среди команд введенная
-                string comString = receivedMes.Commands.ToString();
-                
-                bool select = false;// определяет, найдена ли нужная команда
-                // Тут получение команд
-                if (!select && receivedMes.Commands.Is("старт"))
-                {
-                    SendAdminMessage("Получена команда старт");
-                    // При начале работы бота или при нажатии на кнопку старт
-                    if (user == null)
-                    {
-                        if (BotBase.CreateUser(new User(userTelegram)))
-                        {
-                            Users.Add(BotBase.GetUser(userTelegram.Id));
-                            SendAdminMessage("Создан новый пользователь " + Users[userTelegram.Id].ToString());
-                            Console.WriteLine("Добавлен новый пользователь");
-                            SendMenu(userTelegram.Id, "Привет, дорогой друг. Этот бот предназначен для учеников воскресной школы(подростков). Нажми /help чтобы разобраться, как работает бот.");
-                        }
-                        else
-                        {
-                            Console.WriteLine("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                            Console.WriteLine("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                            Console.WriteLine("!!!Не удалось добавить пользователя!!!");
-                            Console.WriteLine("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                            Console.WriteLine("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                        }
-                    }
-                    else
-                    {
-                        SendMenu(userTelegram.Id,"Рад тебя снова видеть!");
-                    }
-                    select = true;
-                }
-                if (!select && receivedMes.Commands.Is("мем"))
-                {
-                    SendAdminMessage("Получена команда мем");
-                    Console.WriteLine("Команда мем");
-                    toSendMes = Mems.GetMessageRandomMem(Random);
-                    select = true;
-                }
-                if (!select && receivedMes.Commands.Is("золой стих"))
-                {
-                    SendAdminMessage("Получена команда Золотой стих");
-                    //Золотой стих
-                    select = true;
-                }
-                if (!select && receivedMes.Commands.Is("инфо"))
-                {
-                    SendAdminMessage("Получена команда Инфо");
-                    toSendMes.SetText(Config.Info.Text);
-                    select = true;
-                }
-                if (!select && receivedMes.Commands.Is("добыавить золотой стих"))
-                {
-                    SendAdminMessage("Получена команда Добавление золотого стиха");
-                    //добавление золотого стиха
-                    select = true;
-                }
-                if (!select && receivedMes.Commands.Is("добавить мем"))
-                {
-                    SendAdminMessage("Получена команда добавления мема");
-                    if (receivedMes.HavePhoto)
-                    {
-                        if (Mems.Add(new Mem(receivedMes)))
-                        {
-                            string thenks = BotBase.GetRandomAnswer(Commands.Get("thenks"));
-                            string mem = BotBase.GetRandomAnswer(Commands.Get("mem"));
-                            toSendMes.SetText(thenks +" "+ mem);
-                        }
-                        else
-                        {
-                            toSendMes.SetText("Ой прости.. что-то пошло не так, не смог добавить мем...");
-                        }
-                    }
-                    //информация
-                    select = true;
-                }
-                if (!select)
-                {
-                    SendAdminMessage("Пришла неизвестная команда");
-                    Console.WriteLine("Левая какая то команда, может быть случайные слова вообще");
-                }
-                else
-                {
-                    if(toSendMes.Text !="") SendMessage(toSendMes, receivedMes.SenderId);
-                }
+                receivedMes.Commands.AsCommand().Execute(this, receivedMes);
             }
             else
             {

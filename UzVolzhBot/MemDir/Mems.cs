@@ -45,7 +45,15 @@ namespace TelegramBotClean.MemDir
         }
         public bool Add(string fileId,long idMessage,long idChat)
         {
-            return this.Add(new Mem(new MessageI("",fileId,idMessage,idChat)));
+            try
+            {
+                base.Add(new Mem(new MessageI("", fileId, idMessage, idChat)));
+            }
+            catch
+            {
+                return false;
+            }
+            return true;
         }
         protected Bitmap GetRandomMemImage(Random r)
         {
