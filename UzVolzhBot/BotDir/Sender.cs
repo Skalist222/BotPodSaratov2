@@ -102,9 +102,14 @@ namespace TelegramBotClean.Bot
         }
         public async Task SendAdminMessage(MessageI message)
         {
-            long idChat = 1094316046L;
-            SendMessage(message.Text, idChat);
+            SendMessage(message.Text, 1094316046L);
         }
+        public async Task SendAdminMessage(Bitmap bitMap)
+        {
+            SendImage(bitMap, 1094316046L);
+        }
+
+
         public async Task SendAdminMessage(string message)
         {
            SendText(message, 1094316046L);

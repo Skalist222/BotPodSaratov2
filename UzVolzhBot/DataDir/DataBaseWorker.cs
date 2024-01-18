@@ -535,14 +535,6 @@ namespace TelegramBotClean.Data
 
 
 
-
-
-
-
-
-
-
-
         public bool ExecuteValid()
         {
             return InsertInto("MemMessages",new string[] { "fileId","idMessage"},new object[]{"text",159});

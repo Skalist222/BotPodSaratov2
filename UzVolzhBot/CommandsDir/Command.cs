@@ -14,7 +14,6 @@ namespace TelegramBotClean.Commandses
         List<string> texts;
         string description;
         Action<Sender, MessageI> worker;
-        public Action<Sender, MessageI> Worker { get { return worker; } }
 
         public string ToString()
         {

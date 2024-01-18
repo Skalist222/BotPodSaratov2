@@ -14,16 +14,16 @@ namespace TelegramBotClean.Commandses
         private static Dictionary<string, Command> simpleCommands = new Dictionary<string, Command>
         {
             {"/start",new Command("/start",new string[]{ "старт","start"},ExecuteStart)},
+            {"/add",new Command("/add",new string[]{ "добав","+","add"},ExecuteUnknow)},
+            {"/on",new Command("/on",new string[]{ "включ","on"}, ExecuteUnknow)},
+            {"/off",new Command("/off",new string[]{ "выключ","отключ","off"},ExecuteUnknow)},
             {"/mem",new Command("/mem",new string[]{ "мем" },ExecuteMem)},
             {"/gold",new Command("/gold",new string[]{ "золот","gold"},ExecuteUnknow)},
             {"/verse",new Command("/verse",new string[]{ "стих","стиш"},ExecuteVerse)},
-            {"/add",new Command("/add",new string[]{ "добав","+","add"},ExecuteUnknow)},
             {"/bible",new Command("/bible",new string[]{ "библ","bibl"})},
             {"/info",new Command("/info",new string[]{ "инфо","info"},ExecuteInfo)},
-            {"/on",new Command("/on",new string[]{ "включ","on"}, ExecuteUnknow)},
-            {"/off",new Command("/off",new string[]{ "выключ","отключ","off"},ExecuteUnknow)},
             {"/spam",new Command("/spam",new string[]{ "спам","spam"}, ExecuteUnknow)},
-            {"/thenks",new Command("/thanks",new string[]{ "спасибо","спс","thenks"}, ExecuteUnknow)}
+            {"/thanks",new Command("/thanks",new string[]{ "спасиб","спс","thanks"}, ExecuteUnknow)}
         };
         public static Dictionary<string, Command> complexCommands = new Dictionary<string, Command>
         {
@@ -42,7 +42,8 @@ namespace TelegramBotClean.Commandses
 
         public static Command Get(string name)
         {
-            return simpleCommands[name];
+            Commands commands = Commands.SelectCommands(name);
+            return commands.AsCommand();
         }
         // геттеры нужны, чтобы обращаться к существующим командам
         /// <summary>

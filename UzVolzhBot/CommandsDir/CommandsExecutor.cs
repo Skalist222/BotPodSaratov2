@@ -68,7 +68,6 @@ namespace TelegramBotClean.CommandsDir
         }
 
 
-
         public static void ExecuteGoldVerse(Sender sender, MessageI mes)
         {
             sender.SendAdminMessage("Получена команда Золотой стих");
@@ -80,17 +79,12 @@ namespace TelegramBotClean.CommandsDir
         public static void ExecuteAddMem(Sender sender, MessageI mes)
         {
             MessageI toSendMes = new MessageI("");
-            MessageI toAdmin = mes;
-            toAdmin.SetText("Получен этот мем от "+ sender.Users[mes.SenderId].Name+$"({mes.SenderId})");
-            sender.SendAdminMessage(toAdmin);
-
-
             if (mes.HavePhoto)
             {
                 if (sender.Mems.Add(new Mem(mes)))
                 {
-                    string thenks = sender.BotBase.GetRandomAnswer(Commands.Get("thenks"));
-                    string mem = sender.BotBase.GetRandomAnswer(Commands.Get("mem"));
+                    string thenks = sender.BotBase.GetRandomAnswer(Commands.Get("спс"));
+                    string mem = sender.BotBase.GetRandomAnswer(Commands.Get("мем"));
                     toSendMes.SetText(thenks + " " + mem);
                 }
                 else
@@ -103,6 +97,11 @@ namespace TelegramBotClean.CommandsDir
                 toSendMes.SetText("Ну слушай... я конечно добавлю мем, ты главное мне отправь его вместе с просьбой отправить");
             }
             sender.SendMessage(toSendMes,mes.SenderId);
+
+            // после всех обработак отправляем админу инфу о меме
+            sender.SendAdminMessage("Получен этот мем от " + sender.Users[mes.SenderId].Name + $"({mes.SenderId}):");
+            sender.SendAdminMessage("file:" + mes.ImageId + " message:" + mes.Id);
+            sender.SendAdminMessage(mes.Photo);
         }
 
     }
