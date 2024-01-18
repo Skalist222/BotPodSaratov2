@@ -1,6 +1,14 @@
 ﻿
 using TelegramBotClean.Bot;
+using TelegramBotClean.Data;
 
-BotWorker bW = new BotWorker("6331122543:AAE4Vw1s68hwT-G-_cV88xJ6VON-6U41kwo");
-await bW.ListenForMessagesAsync();
-Console.ReadLine();
+if (Config.ValidationConfig())
+{
+    BotWorker bW = new BotWorker(Config.Token);
+    await bW.ListenForMessagesAsync();
+    Console.ReadLine();
+}
+else
+{
+    Logger.Error("Не удалось запустить бот, конфигурация не прошла валидацию!!!","Старт программы");
+}

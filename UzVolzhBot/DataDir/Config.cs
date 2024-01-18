@@ -4,9 +4,15 @@ namespace TelegramBotClean.Data
     public class Config
     {
         public static string InvizibleChar { get { return "ㅤ"; } }
-        public static string PathToDBBot{ get { return "\\\\Srv-ibm\\общая папка\\Программист\\!!Валентин\\Bots\\PodrostkiBot\\BlaBlaInfoBot\\bin\\Debug\\net7.0\\Data\\BotInformation.mdf"; } }
+        public static string Token { get { return File.ReadAllLines(Path.Combine(Directory.GetCurrentDirectory(), "Data", "Secret.txt")).FirstOrDefault("No"); } }
+        public static string PathToDBBot{ get { return Path.Combine(Directory.GetCurrentDirectory(), "Data", "BotInformation.mdf"); } }
         public static BotInformation Info { get { return new BotInformation(); } }
-
+        public static bool ValidationConfig()
+        {
+            if (Token == "No") return false;
+            if (!(new BotDB(new Random()).IsReady)) return false;
+            return true;
+        }
     }
     public class BotInformation
     {
