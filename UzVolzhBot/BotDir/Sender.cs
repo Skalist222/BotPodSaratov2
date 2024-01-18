@@ -182,7 +182,7 @@ namespace TelegramBotClean.Bot
                 {
                     SendAdminMessage("Получена команда мем");
                     Console.WriteLine("Команда мем");
-                    toSendMes = Mems.GetMessageRandomMem(random);
+                    toSendMes = Mems.GetMessageRandomMem(Random);
                     select = true;
                 }
                 if (!select && receivedMes.Commands.Is("золой стих"))

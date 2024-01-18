@@ -181,63 +181,7 @@ namespace TelegramBotClean.Messages
                     command = commands.ToString();
                 }
             }
-
-                    if (commands.ToString() == "clean")
-                    {
-                        //получен просто текст
-                    }
-                    else
-                    { 
-                        // Команда из сообщения
-                        command = commands.ToString();
-                    }
-
-
-
-
-                }
-                if (mesType == MessageType.Sticker)
-                {
-                    text = mes.Sticker!.FileId;
-                    smile = mes.Sticker!.Emoji ?? "!";
-                }
-            }
-            else
-            {
-                if (up.CallbackQuery != null)
-                {// Нажата кнопка в сообщении
-                    senderId = up.CallbackQuery.From.Id;
-                    command = up.CallbackQuery.Data;
-                }
-                else
-                {
-                    //Вот тут уже поинтереснее... я не знаю какой может быть другой вариант
-                }
-            }
         }
-
-        /// <summary>
-        /// Определяет есть ли в списке полученных команд введенная
-        /// </summary>
-        /// <param name="m">Сообщение на проверку</param>
-        /// <param name="c">Введенная команда</param>
-        /// <returns></returns>
-        public static bool operator |(MessageI m, Command c)
-        {
-            return m.Commands.Have(c);
-        }
-        /// <summary>
-        /// Определяет, является ли первой командой из введенных та, которую получил оператор
-        /// </summary>
-        /// <param name="m">Сообщение на проверку</param>
-        /// <param name="c">Введенная команда</param>
-        /// <returns></returns>
-        public static bool operator &(MessageI m, Command c)
-        {
-            return m.Commands.FirstEqual(c);
-        }
-
-
 
         /// <summary>
         /// Определяет есть ли в списке полученных команд введенная
