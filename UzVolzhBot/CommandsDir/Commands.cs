@@ -8,8 +8,6 @@ namespace TelegramBotClean.Commandses
 {
     public class Commands : CommandList
     {
-
-        
         // Сюда писать новые команды
         private static Dictionary<string, Command> simpleCommands = new Dictionary<string, Command>
         {

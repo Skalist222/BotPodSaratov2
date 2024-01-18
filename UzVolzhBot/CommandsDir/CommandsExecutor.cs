@@ -11,7 +11,6 @@ using TelegramBotClean.Commandses;
 using TelegramBotClean.Data;
 using TelegramBotClean.MemDir;
 using TelegramBotClean.Messages;
-using TelegramBotClean.Userses;
 using User = TelegramBotClean.Userses.User;
 
 namespace TelegramBotClean.CommandsDir
