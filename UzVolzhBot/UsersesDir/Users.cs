@@ -65,7 +65,34 @@ namespace TelegramBotClean.Userses
         }
         public Users(BotDB botBase):base()
         {
-            this.AddRange(botBase.GetAllUsers());
+            
+            DataTable t = botBase.GetAllUsers();
+            for (int i = 0; i < t.Rows.Count; i++)
+            {
+                User u = null;
+                DataRow r = t.Rows[i];
+                string priv = r["privileges"].ToString().Trim();
+
+                if (priv == "teen")
+                {
+                    u = new Teen(r);
+                }
+                else
+                if (priv == "teacher")
+                {
+                    u = new Teacher(r);
+                }
+                else
+                if (priv == "admin")
+                {
+                    u = new Admin(r);
+                }
+                else
+                {
+                    u = new DefaultUser(r);
+                }
+                this.Add(u);
+            }
         }
         public User? this[long id]
         {
@@ -73,7 +100,6 @@ namespace TelegramBotClean.Userses
             {
                 if (this.Count == 0) return null;
                 return this.Where(u => u.Id == id)!.First()!;
-                
             }
         }
         public void Add(User user)

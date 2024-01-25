@@ -4,6 +4,7 @@ using System.Data.Common;
 using System.Diagnostics;
 using TelegramBotClean.Commandses;
 using TelegramBotClean.MemDir;
+using TelegramBotClean.Messages;
 using TelegramBotClean.Userses;
 using static TelegramBotClean.Data.Logger;
 using User = TelegramBotClean.Userses.User;
@@ -12,12 +13,14 @@ namespace TelegramBotClean.Data
 {
     public abstract class DataBaseWorker
     {
-        
+        protected DataTable allTables;
         protected DbConnection con;
         protected DbCommand command;
         protected DbDataAdapter adapter;
         protected string constring;
         bool readyToWork;
+        //key - имя таблицы, value- информация о таблице
+        Dictionary<string, DataTable> infoTables;
 
         public bool IsReady
         {
@@ -26,6 +29,14 @@ namespace TelegramBotClean.Data
                 return readyToWork;
             }
         }
+        public DataTable AllTables { get { return allTables; } }
+        public DataTable GetInfoTable(string name) {
+
+            DataTable t = new DataTable();
+            var a = infoTables.Where(el => el.Key.ToLower() == name.ToLower());
+            var b = infoTables.Where(el => el.Key.ToLower() == name.ToLower()).FirstOrDefault(new KeyValuePair<string, DataTable>("", new DataTable()));
+            return b.Value; } 
+
         private void SetNullOnElements()
         {
             command = null;
@@ -43,6 +54,8 @@ namespace TelegramBotClean.Data
             {
                 readyToWork = CheckConnection();
             }
+            UpdateTables();
+            UpdateInfoTables();
         }
         /// <summary>
         /// Создание шаблона подключения к базе данных, по пути к фалу шифрованного 
@@ -90,16 +103,11 @@ namespace TelegramBotClean.Data
             try
             {
                 con.Open();
-                Info("Открыл подключение: " + sql, "Execute", true);
                 command = con.CreateCommand();
                 command.CommandText = sql;
-                int count = command.ExecuteNonQuery();
-                Info("Выполнил запрос: " + sql, "Execute", true);
+                int count = command.ExecuteNonQuery();         
                 con.Close();
-
-                Info("Удалось выполнить запрос: " + sql, "Execute", true);
-                SetNullOnElements();
-                Info("Закрыл подключение/очистил кэш: " + sql, "Execute", true);
+                SetNullOnElements();       
                 InfoStop();
                 return count > 0;
             }
@@ -130,17 +138,13 @@ namespace TelegramBotClean.Data
             {
                 List<string> jsonFormatInfo = new List<string>();
                 con.Open();
-                Info("Открыл подключение ", met);
                 command = con.CreateCommand();
                 command.CommandText = sql;
                 adapter = DbProviderFactories.GetFactory(con).CreateDataAdapter();
-                Info("Сформировал запрос: ", met);
                 adapter.SelectCommand = command;
                 DataTable t = new DataTable();
                 adapter.Fill(t);
-                Info("Выполнил запрос: ", met);
                 con.Close();
-                Info("Закрыл подключение: ", met);
                 Info("Удалась попытка выполнить запрос: ", met);
                 InfoStop();
                 if (t.Rows.Count != 0)
@@ -150,7 +154,7 @@ namespace TelegramBotClean.Data
                 }
                 else
                 {
-                    Error("По запросу " + sql + " ничего не найдено");
+                    Error("По запросу ничего не найдено");
                     SetNullOnElements();
                     return new DataTable();
                 }
@@ -185,6 +189,19 @@ namespace TelegramBotClean.Data
             string WhereString = where == "" ? "" : "WHERE " + where;
             string sqlCommandString = string.Join(" ", new string[] { "Select * FROM", table, WhereString, ";" });
             return Select(sqlCommandString);
+        }
+
+        public string SelecteStringAllIn(string table, string where = "")
+        {
+            string WhereString = where == "" ? "" : "WHERE " + where;
+            string sqlCommandString = string.Join(" ", new string[] { "Select * FROM", table, WhereString, ";" });
+            return sqlCommandString;
+        }
+        public string SelecteStringOneColumn(string column,string table, string where = "")
+        {
+            string WhereString = where == "" ? "" : "WHERE " + where;
+            string sqlCommandString = string.Join(" ", new string[] { "Select column FROM", table, WhereString, ";" });
+            return sqlCommandString;
         }
         protected string[] ColumnOnTableAsStringArray(string table, string column, string where = "")
         {
@@ -343,16 +360,24 @@ namespace TelegramBotClean.Data
         /// Полоучить все таблицы базы данных
         /// </summary>
         /// <returns></returns>
-        protected DataTable GetTables()
+        public void UpdateTables()
         {
-            DataTable t = new DataTable();
-            t = Select("SELECT table_name, table_schema, table_type\r\nFROM information_schema.tables\r\nORDER BY table_name ASC;");
-            return t;
+            allTables = new DataTable();
+            DataTable t = Select("SELECT table_name, table_schema, table_type\r\nFROM information_schema.tables\r\nORDER BY table_name ASC;");
+            allTables = t;
         }
-        protected DataTable GetInfoTable(string table)
+        public void UpdateInfoTables()
         {
-            return Select($"select *\r\nfrom INFORMATION_SCHEMA.COLUMNS\r\nwhere TABLE_NAME='{table}'");
+            infoTables = new Dictionary<string, DataTable>();
+            for (int i = 0; i < allTables.Rows.Count; i++)
+            {
+                string tableName = allTables.Rows[i][0].ToString();
+                infoTables.Add(tableName, Select($"select *\r\nfrom INFORMATION_SCHEMA.COLUMNS\r\nwhere TABLE_NAME='{tableName}'"));
+            }
+            return;
         }
+
+       
         /// <summary>
         /// Получает список всех таблиц в базе данных
         /// </summary>
@@ -361,7 +386,7 @@ namespace TelegramBotClean.Data
         {
             if (IsReady)
             {
-                DataTable t = GetTables();
+                DataTable t = AllTables;
                 List<string> names = new List<string>();
                 foreach (DataRow r in t.Rows)
                 {
@@ -399,43 +424,15 @@ namespace TelegramBotClean.Data
     public class BotDB : MSSQLDBWorker
     {
         Random r;
+        
         public BotDB(Random r) : base(Config.PathToDBBot) { this.r = r; }
         
         //Users
-        public Users GetAllUsers()
+        public DataTable GetAllUsers()
         {
             DataTable dbTable = SelectAllIn("users");
-            Users uRet = new Users();
-            for (int i = 0; i < dbTable.Rows.Count; i++)
-            {
-                User u = null;
-                DataRow r = dbTable.Rows[i];
-                string priv = r["privileges"].ToString().Trim();
-                
-                if (priv == "teen")
-                {
-                    u = new Teen(r);
-                }
-                else
-                if (priv == "teacher")
-                {
-                    u = new Teacher(r);
-                }
-                else
-                if (priv == "admin")
-                {
-                    u = new Admin(r);
-                }
-                else
-                {
-                    u = new DefaultUser(r);
-                }
-                uRet.Add(u);
-            }
-            return uRet;
-
             
-            
+            return dbTable;
             
         }
         public User GetUser(long id)
@@ -504,6 +501,7 @@ namespace TelegramBotClean.Data
         {
             return SelectAllIn("Answere_word");
         }
+      
         public string GetRandomAnswer(Command command)
         {
             long idcommandInBase = GetIdCommandByName(command);
@@ -518,19 +516,36 @@ namespace TelegramBotClean.Data
             string[] answers = ColumnOnTableAsStringArray("Ansvere_word", "word", "idCommand=" + idcommandInBase);
             return answers[r.Next(0, answers.Length)];
         }
+        //public string[] GetRandomAnswers(string c1, string c2="", string c3="", string c4="", string c5="")
+        //{
+            
+        //    List<string> retCommands = new List<string>();
+        //    List<string> commandsLs = new List<string>() { "word = '"+c1+"'" };
+        //    if (c2 != "") commandsLs.Add("word =  '" + c2 + "'");
+        //    if (c3 != "") commandsLs.Add("word =  '" + c3 + "'");
+        //    if (c4 != "") commandsLs.Add("word =  '" + c4 + "'");
+        //    if (c5 != "") commandsLs.Add("word =  '" + c5 + "'");
+                       
+        //    string idcommandInBase = GetIdCommandByName("/" + command);
+
+        //    string[] answers = ColumnOnTableAsStringArray("Ansvere_word", "word", "idCommand=" + idcommandInBase);
+        //    return answers[r.Next(0, answers.Length)];
+        //}
 
 
         //MemMessages
         public DataTable GetAllMemMessages()
         {
            return SelectAllIn("MemMessages");
-           
         }
         public bool CreateMemMessage(Mem mem)
         {
             return InsertInto("MemMessages", new string[]{"fileId","idMessage","idChat"},new object[] {mem.Message.ImageId,mem.Message.Id,mem.Message.ChatId});
         }
-
+        public bool CreateAnonMessage(MessageI mes)
+        {
+            return InsertInto("Anonim_messages", new string[] {"text","idTeen","idAnswer_message","dateTime","desiredTeacher","idMessage"},new object[] { mes.Text, mes.SenderId,0, DateTime.Now,0,mes.Id });
+        }
 
 
 
@@ -538,7 +553,7 @@ namespace TelegramBotClean.Data
         {
             return InsertInto("MemMessages",new string[] { "fileId","idMessage"},new object[]{"text",159});
         }
-        
+
 
     }
   

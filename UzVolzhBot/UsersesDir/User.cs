@@ -7,7 +7,7 @@ namespace TelegramBotClean.Userses
     public class TeenInfo
     {
         protected bool inAnonim;
-        public bool InAnonim { get { return InAnonim; } }
+        public bool InAnonim { get { return inAnonim; } }
         public void SetInAnon() { inAnonim = true; }
         public void SetNotInAnon() { inAnonim = false; }
         public TeenInfo()
@@ -47,7 +47,11 @@ namespace TelegramBotClean.Userses
         protected string lastName;
         protected string uniqName;
         protected bool banned;
+
+
+
         protected MessageI lastMessage;
+        
 
      
 
@@ -56,6 +60,8 @@ namespace TelegramBotClean.Userses
         public string FirstName { get { return firstName; } }
         public string Lastname { get { return lastName; } }
         public bool Ban { get { return banned; } }
+
+  
         public string UniqName { get { return uniqName; } }
         public string LastMessageText { get { return lastMessage!.Text; } }
         public Commands LastMessageCommands { get { return lastMessage!.Commands; } }
@@ -63,6 +69,7 @@ namespace TelegramBotClean.Userses
         {
             lastMessage = mes;
         }
+      
         public void CleanLastMessage()
         {
             lastMessage = null;
@@ -140,6 +147,7 @@ namespace TelegramBotClean.Userses
         public Teen(DataRow r) : base(r)
         {
             type = UserTypes.Teen;
+            teenInfo = new TeenInfo();
         }
         public void SendAnonimMessage(MessageI message)
         {
@@ -151,6 +159,7 @@ namespace TelegramBotClean.Userses
         public Teacher(DataRow r) : base(r)
         {
             type = UserTypes.Teacher;
+            teacherInfo = new TeacherInfo();
         }
     }
     public class Admin : User

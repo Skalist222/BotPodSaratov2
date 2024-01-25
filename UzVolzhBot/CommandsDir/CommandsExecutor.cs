@@ -2,6 +2,7 @@
 using TelegramBotClean.Commandses;
 using TelegramBotClean.Data;
 using TelegramBotClean.MemDir;
+using TelegramBotClean.MenuDir;
 using TelegramBotClean.Messages;
 using User = TelegramBotClean.Userses.User;
 
@@ -12,6 +13,9 @@ namespace TelegramBotClean.CommandsDir
         public static void ExecuteUnknow(Sender sender, MessageI mes)
         {
             Console.WriteLine("Получена неизвестная команда");
+            MesMenuTable menu = new YesNoMenu("Да","Нет");
+            //sender.SendMenuMessage(new YesNoMenu("hfhfh", "asdasd"), sender.Users[mes.SenderId],"Менушка да нетка");
+  
         }
         public static void ExecuteStart(Sender sender, MessageI mes)
         {
@@ -45,7 +49,8 @@ namespace TelegramBotClean.CommandsDir
         {
             sender.SendAdminMessage("Получена команда мем");
             Console.WriteLine("Команда мем");
-            MessageI retMes = sender.Mems.GetMessageRandomMem(sender.Random);
+            MessageI retMes = sender.Mems.GetMessageRandomMem2(sender.Random);
+            retMes.SetText(sender.BotBase.GetRandomAnswer("mem"));
             sender.SendMessage(retMes,mes.SenderId);
         }
         public static void ExecuteVerse(Sender sender, MessageI mes)
@@ -95,6 +100,24 @@ namespace TelegramBotClean.CommandsDir
             sender.SendAdminMessage(mes.Photo);
         }
 
+
+        public static void ExecuteOnAnon(Sender sender, MessageI mes)
+        {
+            sender.Users[mes.SenderId].TeenInfo.SetInAnon();
+            sender.SendMenu(mes.SenderId, "Включена анонимная отправка сообщений");
+        }
+        public static void ExecuteOffAnon(Sender sender, MessageI mes)
+        {
+            sender.Users[mes.SenderId].TeenInfo.SetNotInAnon();
+            sender.SendMenu(mes.SenderId, "Анонимизация отключена");
+        }
+       
+        
+        // Запускаются без команды
+        public static void CreateAnonimMes(Sender sender, MessageI mes)
+        {
+            sender.BotBase.CreateAnonMessage(mes);
+        }
     }
     
 }

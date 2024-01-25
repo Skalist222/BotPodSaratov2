@@ -8,27 +8,35 @@ using TelegramBotClean.Userses;
 using TelegramBotClean.Data;
 using User = TelegramBotClean.Userses.User;
 using TelegramBotClean.MemDir;
+using TelegramBotClean.MenuDir;
+using System;
+using Telegram.Bot.Exceptions;
+using TelegramBotClean.Commandses;
+using TelegramBotClean.CommandsDir;
+using TelegramBotClean.TextDir;
 
 namespace TelegramBotClean.Bot
 {
     public class Sender
     {
 
-       
+
         TelegramBotClient botClient { get; }
-        CancellationToken Token { get; }
+        CancellationToken token { get; }
         public Users Users { get; }
         public BotDB BotBase { get; }
         public Mems Mems { get; }
         public Random Random { get; }
+       public TextWorker textWorker { get; }
 
 
         public Sender(TelegramBotClient botClient, CancellationToken token)
         {
+            this.botClient = botClient;
+            this.token = token;
+
             Random = new Random();
             BotBase = new BotDB(Random);
-            this.botClient = botClient;
-            this.Token = token;
             Users = new Users(BotBase);          
             Mems = new Mems(BotBase,botClient,token);
         }
@@ -45,21 +53,21 @@ namespace TelegramBotClean.Bot
             }
 
         }
-        private async Task SendImage(string pathImage, long idChat, string caption = "")
+        private async Task SendImage(string idFile, long idChat, string caption = "")
         {
-            var bm = Bitmap.FromFile(pathImage);
-            var ms = new MemoryStream();
-            bm.Save(ms, System.Drawing.Imaging.ImageFormat.Jpeg);
-            ms.Position = 0;
-            using (var fileStream = new FileStream(pathImage, FileMode.Open, FileAccess.Read, FileShare.Read))
+            try
             {
-                Telegram.Bot.Types.InputFiles.InputOnlineFile file = new Telegram.Bot.Types.InputFiles.InputOnlineFile(fileStream);
-                await botClient.SendPhotoAsync(
-                    chatId: idChat,
-                    photo: file,
-                    caption: caption
-                );
+                botClient.SendPhotoAsync(
+               chatId: idChat,
+               photo: idFile,
+               caption: caption
+               );
             }
+            catch (Exception exx)
+            {
+                Logger.Error("Ошибка в отправке фотки по id");
+            }
+           
         }
         private async Task SendImage(Bitmap image, long idChat, string caption = "")
         {
@@ -80,6 +88,7 @@ namespace TelegramBotClean.Bot
             }
             System.IO.File.Delete(path);
         }
+       
         private async Task DeleteMessage(int idMessage, long userDeleted)
         {
             await botClient.DeleteMessageAsync(
@@ -92,7 +101,15 @@ namespace TelegramBotClean.Bot
         public async Task SendMessage(MessageI message, long idChat)
         {
             if (message.IsText) SendText(message.Text,idChat);
-            if (message.HavePhoto) SendImage(message.Photo, idChat,message.Text);
+            if (message.HavePhoto)
+            {
+                if (message.Photo is not null) SendImage(message.Photo, idChat, message.Text);
+                else SendImage(message.ImageId, idChat,message.Text);
+            }
+            else
+            {
+                
+            } 
         }
         public async Task SendMessage(string message, long idChat)
         {
@@ -106,6 +123,23 @@ namespace TelegramBotClean.Bot
         {
             SendImage(bitMap, 1094316046L);
         }
+        public async Task SendMenuMessage(MesMenuTable menu, User user, string text = "")
+        {
+            InlineKeyboardMarkup ikm = new InlineKeyboardMarkup(menu);
+            try
+            {
+                await botClient.SendTextMessageAsync(
+                    chatId: user.Id,
+                    text: text,
+                    replyMarkup: ikm
+                );
+            }
+            catch (ApiRequestException ex)
+            {
+                Logger.Error(ex.Message);
+                Console.WriteLine(ex.Message);
+            }
+        }
 
 
         public async Task SendAdminMessage(string message)
@@ -114,8 +148,21 @@ namespace TelegramBotClean.Bot
         }
         public async Task SendMenu(long idChat,string textInfo= "Мир тебе, дорогой мой друг")
         {
-            if (textInfo == "") textInfo = "Мир тебе, дорогой мой друг";// Если вдруг человек отправил пустую строку 
+            if (textInfo == "") textInfo = "Мир тебе, дорогой мой друг"; 
+            User u = Users[idChat];
             BaseMenu menu = new BaseMenu();
+            if (u.TypeUser == UserTypes.Teen)
+            {
+                if (!u.TeenInfo.InAnonim)
+                {
+                    menu = new TeenMenu();
+                }
+                else
+                {
+                    menu = new TeenOnAnonMenu();
+                }
+            }
+
             ReplyKeyboardMarkup mrkp = new ReplyKeyboardMarkup(keyboard: menu.ButtonTable);
             try
             {
@@ -136,18 +183,28 @@ namespace TelegramBotClean.Bot
         public async void CreateAnswere(Update up)
         {
             DateTime start = DateTime.Now;
-            MessageI receivedMes = new MessageI(up,botClient,Token);// Полученное сообщение
-            MessageI toSendMes = new MessageI("");// сообщение которое мы отправим в обратку
-
-            Telegram.Bot.Types.User userTelegram = up.Message is not null ? up.Message.From : up.CallbackQuery.From;
-            //Если пользователя нет в базе данных
-            User user = BotBase.GetUser(receivedMes.SenderId);
-
-
+            MessageI receivedMes = new MessageI(up,botClient,token);// Полученное сообщение
+        
             //Во первых проверяем есть ли команда
             if (receivedMes.HaveCommand)
             {
-                receivedMes.Commands.AsCommand().Execute(this, receivedMes);
+                Command selectedCommand = receivedMes.Commands.AsCommand();
+                bool inAnon = Users[receivedMes.SenderId].TeenInfo!.InAnonim;
+                if (!inAnon)
+                {
+                    selectedCommand.Execute(this, receivedMes);
+                }
+                else
+                {
+                    if (selectedCommand == Commands.OffAnonCommand)
+                    {
+                        selectedCommand.Execute(this, receivedMes);
+                    }
+                    else
+                    {
+                        CommandsExecutor.CreateAnonimMes(this, receivedMes);
+                    }
+                }
             }
             else
             {
@@ -155,7 +212,6 @@ namespace TelegramBotClean.Bot
                 {
                     Console.WriteLine("Пришло фото");
                 }
-                
                 SendAdminMessage("Пришло сообщение без команд");
             }
             DateTime finish = DateTime.Now;

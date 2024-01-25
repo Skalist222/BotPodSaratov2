@@ -18,13 +18,16 @@ namespace TelegramBotClean.Commandses
             {"/bible",new Command("/bible",new string[]{ "библ","bibl"})},
             {"/info",new Command("/info",new string[]{ "инфо","info"},ExecuteInfo)},
             {"/spam",new Command("/spam",new string[]{ "спам","spam"}, ExecuteUnknow)},
-            {"/thanks",new Command("/thanks",new string[]{ "спасиб","спс","thanks"}, ExecuteUnknow)}
+            {"/thanks",new Command("/thanks",new string[]{ "спасиб","спс","thanks"}, ExecuteUnknow)},
+             {"/anon",new Command("/anon",new string[]{ "анон","anon"}, ExecuteUnknow)}
         };
         public static Dictionary<string, Command> complexCommands = new Dictionary<string, Command>
         {
             {"/add/mem",new Command("/addMem",new string[]{ "+ мем"},ExecuteAddMem    )},
             {"/gold/verse",new Command("/goldverse",new string[]{ "золотой стих"},ExecuteGoldVerse)},
-            {"/add/gold/verse",new Command("/addGoldVerse",new string[]{ "добавить золотой стих"},ExecuteAddGoldVerse)}
+            {"/add/gold/verse",new Command("/addGoldVerse",new string[]{ "добавить золотой стих"},ExecuteAddGoldVerse)},
+            {"/on/anon",new Command("/on/anon",new string[]{"включить анон" },ExecuteOnAnon)},
+             {"/off/anon",new Command("/off/anon",new string[]{"отключить анон" },ExecuteOffAnon)}
         };
 
         //Для полноценной команды в программу нужно:
@@ -69,7 +72,7 @@ namespace TelegramBotClean.Commandses
         public static Commands GoldVerseCommands { get { return GoldCommand + VerseCommand; } }
         public static Commands AddGoldVerseCommand { get { return AddCommand + GoldVerseCommand; } }
         public static Command GoldVerseCommand { get { return complexCommands["/gold/verse"]; } }
-
+        public static Command OffAnonCommand { get { return complexCommands["/off/anon"]; } }
         #endregion
 
 

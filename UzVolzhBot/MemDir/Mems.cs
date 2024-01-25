@@ -76,11 +76,15 @@ namespace TelegramBotClean.MemDir
         }
         public MessageI GetMessageRandomMem(Random r)
         {
-            string textMessage = botBase.GetRandomAnswer("catch")+ botBase.GetRandomAnswer("mem")+")";
+            string textMessage = botBase.GetRandomAnswer("catch") + " "+ botBase.GetRandomAnswer("mem") + ")";
             Bitmap bm = GetRandomMemImage(r);
             return new MessageI(textMessage,bm);
         }
-        
-
+        public MessageI GetMessageRandomMem2(Random r)
+        {
+            int randomIndexMem = r.Next(0, this.Count);
+            MessageI m = this[randomIndexMem].Message;
+            return m;
+        }
     }
 }
