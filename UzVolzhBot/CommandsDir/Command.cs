@@ -1,4 +1,5 @@
 ﻿using TelegramBotClean.Bot;
+using TelegramBotClean.CommandsDir;
 using TelegramBotClean.Messages;
 
 namespace TelegramBotClean.Commandses
@@ -65,9 +66,18 @@ namespace TelegramBotClean.Commandses
             }
             return false;
         }
-        public void Execute(Sender sender, MessageI mes)
+        public string Execute(Sender sender, MessageI mes)
         {
-            worker(sender, mes);
+            string validation = CommandsExecutor.ValidAll(sender, mes);
+            if (validation == "OK")
+            {
+                worker(sender, mes);
+                return "OK";
+            }
+            else
+            {
+                return validation;
+            }
         }
 
 

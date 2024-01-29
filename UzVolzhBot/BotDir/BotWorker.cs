@@ -39,7 +39,6 @@ namespace TelegramBotClean.Bot
         private async Task GetUpdates(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {
             token = cancellationToken;
-           
             sender.CreateAnswere(update);
         }
         private Task GetErrors(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)

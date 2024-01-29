@@ -9,11 +9,11 @@ using TelegramBotClean.Data;
 using User = TelegramBotClean.Userses.User;
 using TelegramBotClean.MemDir;
 using TelegramBotClean.MenuDir;
-using System;
 using Telegram.Bot.Exceptions;
 using TelegramBotClean.Commandses;
 using TelegramBotClean.CommandsDir;
 using TelegramBotClean.TextDir;
+using TelegramBotClean.MessagesDir;
 
 namespace TelegramBotClean.Bot
 {
@@ -27,8 +27,8 @@ namespace TelegramBotClean.Bot
         public BotDB BotBase { get; }
         public Mems Mems { get; }
         public Random Random { get; }
-       public TextWorker textWorker { get; }
-
+        public TextWorker TextWorker { get; }
+        public UnansweredsMeesages UnansweredMessage { get; }
 
         public Sender(TelegramBotClient botClient, CancellationToken token)
         {
@@ -39,6 +39,8 @@ namespace TelegramBotClean.Bot
             BotBase = new BotDB(Random);
             Users = new Users(BotBase);          
             Mems = new Mems(BotBase,botClient,token);
+            TextWorker = new TextWorker(BotBase,Random);
+            UnansweredMessage = new UnansweredsMeesages(BotBase);
         }
 
         private async Task SendText(string text, long idChat)
@@ -51,7 +53,6 @@ namespace TelegramBotClean.Bot
             {
                 Console.WriteLine("Ошибка в отправке сообщения" + ex.Message);
             }
-
         }
         private async Task SendImage(string idFile, long idChat, string caption = "")
         {
@@ -162,6 +163,10 @@ namespace TelegramBotClean.Bot
                     menu = new TeenOnAnonMenu();
                 }
             }
+            if (u.TypeUser == UserTypes.Teacher)
+            {
+                menu = new TeacherMenu();
+            }
 
             ReplyKeyboardMarkup mrkp = new ReplyKeyboardMarkup(keyboard: menu.ButtonTable);
             try
@@ -177,8 +182,23 @@ namespace TelegramBotClean.Bot
                 Console.WriteLine($"Не удалось отправить сообщение пользователю "+e.Message);
             }
         }
-        
-
+        public async Task SendMessageMenu(long idChat, MesMenuTable menu, string textInfo)
+        {
+            if (textInfo.Replace("\r\n", string.Empty).Trim() == "") textInfo = "ВОПРОС!";
+            InlineKeyboardMarkup mrkp = new InlineKeyboardMarkup(menu);
+            try
+            {
+                await botClient.SendTextMessageAsync(
+                               chatId: idChat,
+                               text: textInfo,
+                               replyMarkup: mrkp
+                );
+            }
+            catch (Exception e)
+            {
+                Logger.Error($"Не удалось отправить сообщение пользователю " + e.Message, "SendMessageMenu");
+            }
+        }
 
         public async void CreateAnswere(Update up)
         {
@@ -189,21 +209,13 @@ namespace TelegramBotClean.Bot
             if (receivedMes.HaveCommand)
             {
                 Command selectedCommand = receivedMes.Commands.AsCommand();
-                bool inAnon = Users[receivedMes.SenderId].TeenInfo!.InAnonim;
-                if (!inAnon)
-                {
-                    selectedCommand.Execute(this, receivedMes);
-                }
-                else
+                string anyCommand = selectedCommand.Execute(this,receivedMes);
+                if (anyCommand == "anon") 
                 {
                     if (selectedCommand == Commands.OffAnonCommand)
-                    {
-                        selectedCommand.Execute(this, receivedMes);
-                    }
+                        CommandsExecutor.ExecuteOffAnon(this, receivedMes);
                     else
-                    {
                         CommandsExecutor.CreateAnonimMes(this, receivedMes);
-                    }
                 }
             }
             else
@@ -219,4 +231,3 @@ namespace TelegramBotClean.Bot
         }
     }
 }
-

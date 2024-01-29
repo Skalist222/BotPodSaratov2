@@ -1,10 +1,12 @@
 ﻿using Microsoft.Data.SqlClient;
+using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using TelegramBotClean.Commandses;
 using TelegramBotClean.MemDir;
 using TelegramBotClean.Messages;
+using TelegramBotClean.MessagesDir;
 using TelegramBotClean.Userses;
 using static TelegramBotClean.Data.Logger;
 using User = TelegramBotClean.Userses.User;
@@ -459,6 +461,18 @@ namespace TelegramBotClean.Data
             }
             return false;
         }
+        public Dictionary<long, string> GetUniqNamesWithId()
+        {
+            Dictionary<long, string> retValue = new Dictionary<long, string>();
+            DataTable t = Select(new string[] { "id", "uniqName" }, "Users");
+            for (int i = 0; i < t.Rows.Count; i++)
+            {
+                long id = Convert.ToInt64(t.Rows[i]["id"].ToString());
+                string uniqName = t.Rows[i]["uniqName"].ToString();
+                retValue.Add(id, uniqName);
+            }
+            return retValue;
+        }
      
         //Commands
         public long GetIdCommandByName(Command c)
@@ -499,7 +513,32 @@ namespace TelegramBotClean.Data
         //Answers
         public DataTable GetAllAnswersCommand()
         {
-            return SelectAllIn("Answere_word");
+            return SelectAllIn("Ansvere_word");
+        }
+        public DataTable GetAllAnswersCommandAndName()
+        {
+            return Select("Select textCommand as name,word from Commands,Ansvere_word Where Ansvere_word.idCommand = Commands.id ");
+        }
+        public Dictionary<string, List<string>> GetAlAnswersComplect()
+        {
+            Dictionary<string, List<string>> retValues = new Dictionary<string, List<string>>();
+            List<string> commandses;
+            DataTable t = GetAllAnswersCommandAndName();
+            for (int i = 0; i < t.Rows.Count; i++)
+            {
+                string nameCommand = t.Rows[i]["name"].ToString();
+                string textAnswer = t.Rows[i]["word"].ToString();
+                
+                if (retValues.Where(el=>el.Key == nameCommand).Count() !=0)
+                {
+                    retValues[nameCommand].Add(textAnswer);
+                }
+                else
+                {
+                    retValues.Add(nameCommand, new List<string>() { textAnswer });
+                }
+            }
+            return retValues;
         }
       
         public string GetRandomAnswer(Command command)
@@ -542,12 +581,37 @@ namespace TelegramBotClean.Data
         {
             return InsertInto("MemMessages", new string[]{"fileId","idMessage","idChat"},new object[] {mem.Message.ImageId,mem.Message.Id,mem.Message.ChatId});
         }
-        public bool CreateAnonMessage(MessageI mes)
+        public bool CreateAnonMessage(MessageI mes,string anonName)
         {
-            return InsertInto("Anonim_messages", new string[] {"text","idTeen","idAnswer_message","dateTime","desiredTeacher","idMessage"},new object[] { mes.Text, mes.SenderId,0, DateTime.Now,0,mes.Id });
+            return InsertInto("Anonim_messages", 
+                new string[] {"text"   , "idTeen",     "idAnswer_message", "dateTime",   "desiredTeacher", "idMessage", "anonName"},
+                new object[] { mes.Text, mes.SenderId, 0,                  DateTime.Now, 0,                mes.Id,      anonName});
         }
+        
 
-
+        //AnonimNames
+        public string[] GetAllAnonimNames() 
+        {
+            return SelectAllIn("AnonimUserName")
+                .AsEnumerable()
+                .Select(el => el[1].ToString())
+                .ToArray();
+        }
+        //AnonimMessages
+        public DataTable GetAllAnonMessageWithTeacherName()
+        {
+            DataTable t = Select("Select " +
+                "text," +
+                "idTeen," +
+                "idAnswer_message," +
+                "desiredTeacher," +
+                "idMessage," +
+                "anonName " +
+                "FROM Anonim_messages " +
+                "WHERE idAnswer_message = 0" 
+               );
+            return t;
+        }
 
         public bool ExecuteValid()
         {

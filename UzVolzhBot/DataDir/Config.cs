@@ -3,7 +3,6 @@ namespace TelegramBotClean.Data
 {
     public class Config
     {
-        public static string InvizibleChar { get { return "ㅤ"; } }
         public static string Token { get { return File.ReadAllLines(Path.Combine(Directory.GetCurrentDirectory(), "Data", "Secret.txt")).FirstOrDefault("No"); } }
         public static string PathToDBBot{ get { return Path.Combine(Directory.GetCurrentDirectory(), "Data", "BotInformation.mdf"); } }
         public static BotInformation Info { get { return new BotInformation(); } }

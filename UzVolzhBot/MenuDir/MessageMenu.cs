@@ -1,5 +1,6 @@
 ﻿
 using Telegram.Bot.Types.ReplyMarkups;
+using TelegramBotClean.Data;
 using But = Telegram.Bot.Types.ReplyMarkups.InlineKeyboardButton;
 
 namespace TelegramBotClean.MenuDir
@@ -30,10 +31,17 @@ namespace TelegramBotClean.MenuDir
             if (r9 is not null) this.Add(r9);
             if (r10 is not null) this.Add(r10);
         }
+        public MesMenuTable(MesMenuBut[] buttons) : base()
+        {
+            for (int i = 0; i < buttons.Length; i++)
+            {
+                Add(new MesMenuRow(buttons[i]));
+            }
+        }
     };
-    public class MesMenuRow : List<But> 
+    public class MesMenuRow : List<MesMenuBut> 
     {
-        public MesMenuRow(But b1=null, But b2=null, But b3=null, But b4=null, But b5=null) : base()
+        public MesMenuRow(MesMenuBut b1 =null, MesMenuBut b2 =null, MesMenuBut b3 =null, MesMenuBut b4 = null, MesMenuBut b5 = null) : base()
         {
             if (b1 is not null) this.Add(b1);
             if (b2 is not null) this.Add(b2);
@@ -42,17 +50,27 @@ namespace TelegramBotClean.MenuDir
             if (b5 is not null) this.Add(b5);
         }
     }
+    public class MesMenuBut : But
+    {
+        public MesMenuBut(string text) : base(text)
+        {
+        }
+        public MesMenuBut(string text, string data) : base(text)
+        {
+            if (data.Length > 64) Logger.Error($"Команда в кнопке слишком большая!!!{data}");
+            this.CallbackData = data;
+        }
+    }
+
 
     public class YesNoMenu: MesMenuTable
     {
-        public YesNoMenu(But yes, But no)
-            :base(new MesMenuRow(yes,no))
-        { }
-        public YesNoMenu(string yes, string no) 
-            : base(new MesMenuRow(new But("Да"),new But("Нет")))
+        public YesNoMenu(string yesData, string noData) 
+            : base(new MesMenuRow(
+                new MesMenuBut("Да", yesData),
+                new MesMenuBut("Нет", noData)
+                ))
         {
-            this[0][0].CallbackData = yes;
-            this[0][1].CallbackData = no;
         }
     }
 }

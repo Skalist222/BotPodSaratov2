@@ -1,12 +1,13 @@
 ﻿using Telegram.Bot.Types.ReplyMarkups;
 using TelegramBotClean.Data;
+using TelegramBotClean.TextDir;
 
 namespace TelegramBotClean.MenuDir
 {
     public class MenuButton : KeyboardButton
     {
         string TextButton { get; }
-        public MenuButton(string text) : base(Config.InvizibleChar + text + Config.InvizibleChar) { TextButton = text; }
+        public MenuButton(string text) : base(Invizible.One + text + Invizible.One) { TextButton = text; }
         //Основные кнопки
         public static MenuButton InfoBut { get { return new MenuButton("Инфо"); } }
         public static MenuButton MemBut { get { return new MenuButton("Мем"); } }
@@ -16,6 +17,7 @@ namespace TelegramBotClean.MenuDir
 
         public static MenuButton OnAnonBut { get { return new MenuButton("Включить анон"); } }
         public static MenuButton OffAnonBut { get { return new MenuButton("Отключить анон"); } }
+        public static MenuButton AllAnonMessages { get { return new MenuButton("Анонимные сообщения "+ InvizibleEquals.All); } }
     }
     public class MenuRow : List<MenuButton>
     {
@@ -70,6 +72,8 @@ namespace TelegramBotClean.MenuDir
             table = new MenuTable(b1);
         }
     }
+
+    //TEacher menus
     public class TeenMenu : BaseMenu
     {
         public TeenMenu() : base()
@@ -86,6 +90,17 @@ namespace TelegramBotClean.MenuDir
             table = new MenuTable(b1);
         }
     }
+
+    public class TeacherMenu : BaseMenu
+    {
+        public TeacherMenu() : base()
+        {
+            MenuButton b1 = MenuButton.AllAnonMessages;
+            table.Add(b1);
+        }
+    }
+
+
     public class AdminMenu : BaseMenu
     {
         public AdminMenu() : base()

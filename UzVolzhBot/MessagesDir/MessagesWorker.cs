@@ -5,6 +5,7 @@ using Telegram.Bot.Types;
 using Telegram.Bot;
 using TelegramBotClean.Commandses;
 using TelegramBotClean.Data;
+using TelegramBotClean.TextDir;
 
 namespace TelegramBotClean.Messages
 {
@@ -19,8 +20,9 @@ namespace TelegramBotClean.Messages
         string imageId = "";//айди присланной картинки
         string command = "";//полученная команда
         string smile = "";// если получен стикер, будет определен смайлик этого стикера
-        Commands commands = new Commands(true);
+        Commands commands;
         long chatId = 0;
+      
 
         public long Id { get { return id; } }
         public string Text { get { return text; } }
@@ -159,10 +161,10 @@ namespace TelegramBotClean.Messages
         }
         private void SelectCommands(ref Commands commands, string text)
         {
-            string cleanText = text.Replace(Config.InvizibleChar, "");
+            string cleanText = text.Replace(Invizible.One, "");
             commands = Commands.SelectCommands(cleanText);//Получаем команды
             // проверяю не команда ли это
-            if (text![0].ToString() == Config.InvizibleChar)
+            if (text![0].ToString() == Invizible.One)
             {
                 // Значит это Нажата кнопка!
                 if (commands.ToString() == "clean")

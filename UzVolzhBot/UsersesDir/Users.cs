@@ -99,7 +99,14 @@ namespace TelegramBotClean.Userses
             get 
             {
                 if (this.Count == 0) return null;
-                return this.Where(u => u.Id == id)!.First()!;
+                try
+                {
+                    var grp = this.Where(u => u.Id == id);
+                    if (grp.Count() == 0) return null;
+                    else return grp.First();
+                }
+                catch (InvalidOperationException ex)
+                { return null; }               
             }
         }
         public void Add(User user)

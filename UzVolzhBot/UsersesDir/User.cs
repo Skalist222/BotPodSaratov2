@@ -1,15 +1,43 @@
-﻿using System.Data;
+﻿using Microsoft.Identity.Client;
+using System.Data;
+using System.Net.Security;
 using TelegramBotClean.Commandses;
 using TelegramBotClean.Messages;
+using TelegramBotClean.TextDir;
+using Logger = TelegramBotClean.Data.Logger;
 
 namespace TelegramBotClean.Userses
 {
     public class TeenInfo
     {
         protected bool inAnonim;
+        protected string anonName;
+
         public bool InAnonim { get { return inAnonim; } }
-        public void SetInAnon() { inAnonim = true; }
-        public void SetNotInAnon() { inAnonim = false; }
+        public string AnonName { get { return anonName; } }
+
+        public void SetInAnon(TextWorker tw) {
+            if (!inAnonim)
+            {
+                inAnonim = true;
+                anonName = tw.RandomAnonName();
+            }
+            else
+            {
+                Logger.Error("Попытка включить анон когда он и так включен");
+            }
+        }
+        public void SetNotInAnon(TextWorker tw) {
+            if (inAnonim)
+            {
+                inAnonim = false;
+                tw.AnonNameFinished(anonName);
+            }
+            else 
+            {
+                Logger.Error("Попытка отключить анон когда он и так отключен");
+            }
+        }
         public TeenInfo()
         {
             inAnonim = false;

@@ -5,7 +5,7 @@
         public string ToString()
         {
             if (this.Count == 0) return "clean";
-            else if (this.Count == new Commands(false).Count) return "all";
+            else if (this.Count == new Commands(false, false).Count) return "all";
             else
             {
                 string retString = this[0].Name;

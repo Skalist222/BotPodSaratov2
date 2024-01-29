@@ -1,39 +1,52 @@
 ﻿using TelegramBotClean.CommandsDir;
+using TelegramBotClean.Data;
+using TelegramBotClean.TextDir;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 using static TelegramBotClean.CommandsDir.CommandsExecutor;
 
 namespace TelegramBotClean.Commandses
 {
     public class Commands : CommandList
     {
+        private bool fromButton;
+        public bool IsButtonCommand { get { return fromButton; } }
         // Сюда писать новые команды
         private static Dictionary<string, Command> simpleCommands = new Dictionary<string, Command>
         {
+            {"/admin",new Command("/admin",new string[]{ "admin","админ"},ExecuteAdmin)},
             {"/start",new Command("/start",new string[]{ "старт","start"},ExecuteStart)},
             {"/add",new Command("/add",new string[]{ "добав","+","add"},ExecuteUnknow)},
             {"/on",new Command("/on",new string[]{ "включ","on"}, ExecuteUnknow)},
             {"/off",new Command("/off",new string[]{ "выключ","отключ","off"},ExecuteUnknow)},
-            {"/mem",new Command("/mem",new string[]{ "мем" },ExecuteMem)},
+            {"/mem",new Command("/mem",new string[]{ "мем","mem" },ExecuteMem)},
             {"/gold",new Command("/gold",new string[]{ "золот","gold"},ExecuteUnknow)},
             {"/verse",new Command("/verse",new string[]{ "стих","стиш"},ExecuteVerse)},
             {"/bible",new Command("/bible",new string[]{ "библ","bibl"})},
             {"/info",new Command("/info",new string[]{ "инфо","info"},ExecuteInfo)},
             {"/spam",new Command("/spam",new string[]{ "спам","spam"}, ExecuteUnknow)},
             {"/thanks",new Command("/thanks",new string[]{ "спасиб","спс","thanks"}, ExecuteUnknow)},
-             {"/anon",new Command("/anon",new string[]{ "анон","anon"}, ExecuteUnknow)}
+            {"/anon",new Command("/anon",new string[]{ "анон","anon"}, ExecuteUnknow)},
+            {"/messages",new Command("/messages",new string[]{ "сообщения" },ExecuteUnknow)},
+            // Сочетание второго и третьего невидимого символа, будут означать "все"
+            {"/all",new Command("/all",new string[]{ "все",InvizibleEquals.All},ExecuteUnknow)},
+            {"/help",new Command("/help",new string[]{ "помощь"},ExecuteHelp)},
+            {"/howWorkButton",new Command("/howWorkButton",new string[]{ "Как работают кнопки"},ExecuteHowWorkButton)},
         };
         public static Dictionary<string, Command> complexCommands = new Dictionary<string, Command>
         {
-            {"/add/mem",new Command("/addMem",new string[]{ "+ мем"},ExecuteAddMem    )},
+            {"/add/mem",new Command("/addMem",new string[]{ "+ мем"},ExecuteAddMem)},
             {"/gold/verse",new Command("/goldverse",new string[]{ "золотой стих"},ExecuteGoldVerse)},
             {"/add/gold/verse",new Command("/addGoldVerse",new string[]{ "добавить золотой стих"},ExecuteAddGoldVerse)},
             {"/on/anon",new Command("/on/anon",new string[]{"включить анон" },ExecuteOnAnon)},
-             {"/off/anon",new Command("/off/anon",new string[]{"отключить анон" },ExecuteOffAnon)}
+            {"/off/anon",new Command("/off/anon",new string[]{"отключить анон" },ExecuteOffAnon)},
+
+            {"/admin/users",new Command("/admin/users",new string[]{"Все пользователи админу" },ExecuteAdminUsers)},
+            {"/admin/mem/all",new Command("/admin/mem/all",new string[]{"Все мемы админу" },ExecuteAdminMems)},
+            {"/anon/messages/all",new Command("/anon/messages/all",new string[]{"все неотвеченые анонимки" },ExecuteAllAnonimMessages)},
         };
 
         //Для полноценной команды в программу нужно:
-        //1) Создать геттер по примеру MemCommand.
-        //2) В конструктор Command():base(), внутри проверки if(!clean) прописать добавление
-        //   недавно созданного геттера по примеру this.Add(MemCommand)
+
 
         //Все команды
         #region Все команды (Геттеры)
@@ -92,7 +105,6 @@ namespace TelegramBotClean.Commandses
             if (complex is not null) return complex;
             //Если и один и второй нул, значит неизвестная
             return Unknow;
-
         }
 
 
@@ -113,8 +125,9 @@ namespace TelegramBotClean.Commandses
         /// True - создасться пустой класс без команд
         /// False - создастся класс со всеми возможными командами
         /// </param>
-        public Commands(bool clean = true) : base()
+        public Commands(bool fromButton = false, bool clean = true) : base()
         {
+            this.fromButton = fromButton;
             if (!clean)
             {
                 this.AddRange(simpleCommands.Select(el => el.Value).ToList());
