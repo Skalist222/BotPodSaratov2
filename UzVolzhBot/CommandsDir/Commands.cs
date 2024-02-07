@@ -10,39 +10,54 @@ namespace TelegramBotClean.Commandses
     {
         private bool fromButton;
         public bool IsButtonCommand { get { return fromButton; } }
+        public void FromButtonTrue() { fromButton = true; }
+        public void FromButtonFalse() { fromButton = false; }
+        public string SeparatedBySpace()
+        {
+            return string.Join(" ", this.Select(el => el.Name));
+        }
+
         // Сюда писать новые команды
         private static Dictionary<string, Command> simpleCommands = new Dictionary<string, Command>
         {
-            {"/admin",new Command("/admin",new string[]{ "admin","админ"},ExecuteAdmin)},
-            {"/start",new Command("/start",new string[]{ "старт","start"},ExecuteStart)},
-            {"/add",new Command("/add",new string[]{ "добав","+","add"},ExecuteUnknow)},
-            {"/on",new Command("/on",new string[]{ "включ","on"}, ExecuteUnknow)},
-            {"/off",new Command("/off",new string[]{ "выключ","отключ","off"},ExecuteUnknow)},
-            {"/mem",new Command("/mem",new string[]{ "мем","mem" },ExecuteMem)},
-            {"/gold",new Command("/gold",new string[]{ "золот","gold"},ExecuteUnknow)},
-            {"/verse",new Command("/verse",new string[]{ "стих","стиш"},ExecuteVerse)},
+            {"/admin",new Command("/admin",new string[]{ "admin","админ"},ExAdmin)},
+            {"/start",new Command("/start",new string[]{ "старт","start"},ExStart)},
+            {"/add",new Command("/add",new string[]{ "добав","+","add"},ExUnknow)},
+            {"/turnOn",new Command("/turnOn",new string[]{ "включ","turnOn"}, ExUnknow)},
+            {"/turnOff",new Command("/turnOff",new string[]{ "выключ","отключ", "отмен", "turnoff"},ExUnknow)},
+            {"/mem",new Command("/mem",new string[]{ "мем","mem" },ExMem)},
+            {"/gold",new Command("/gold",new string[]{ "золот","gold"},ExUnknow)},
+            {"/verse",new Command("/verse",new string[]{ "стих","стиш"},ExUnknow)},
             {"/bible",new Command("/bible",new string[]{ "библ","bibl"})},
-            {"/info",new Command("/info",new string[]{ "инфо","info"},ExecuteInfo)},
-            {"/spam",new Command("/spam",new string[]{ "спам","spam"}, ExecuteUnknow)},
-            {"/thanks",new Command("/thanks",new string[]{ "спасиб","спс","thanks"}, ExecuteUnknow)},
-            {"/anon",new Command("/anon",new string[]{ "анон","anon"}, ExecuteUnknow)},
-            {"/messages",new Command("/messages",new string[]{ "сообщения" },ExecuteUnknow)},
+            {"/info",new Command("/info",new string[]{ "инфо","info"},ExInfo)},
+            {"/spam",new Command("/spam",new string[]{ "спам","spam"}, ExUnknow)},
+            {"/thanks",new Command("/thanks",new string[]{ "спасиб","спс","thanks"}, ExUnknow)},
+            {"/anon",new Command("/anon",new string[]{ "анон","anon"}, ExUnknow)},
+            {"/messages",new Command("/messages",new string[]{ "сообщения" },ExUnknow)},
             // Сочетание второго и третьего невидимого символа, будут означать "все"
-            {"/all",new Command("/all",new string[]{ "все",InvizibleEquals.All},ExecuteUnknow)},
-            {"/help",new Command("/help",new string[]{ "помощь"},ExecuteHelp)},
-            {"/howWorkButton",new Command("/howWorkButton",new string[]{ "Как работают кнопки"},ExecuteHowWorkButton)},
+            {"/all",new Command("/all",new string[]{ "все",InvizibleEquals.All},ExUnknow)},
+            {"/help",new Command("/help",new string[]{ "помощь"},ExHelp)},
+            {"/howWorkButton",new Command("/howWorkButton",new string[]{ "Как работают кнопки"},ExHowWorkButton)},
+            {"/read",new Command("/read",new string[]{ "прочитать","прочесть","читать","read"},ExUnknow)},
+            {"/answere",new Command("/answere",new string[]{"ответ"},ExUnknow)},
+            {"/random",new Command("/random",new string[]{"случай","рандом"},ExUnknow)},
+
         };
         public static Dictionary<string, Command> complexCommands = new Dictionary<string, Command>
         {
-            {"/add/mem",new Command("/addMem",new string[]{ "+ мем"},ExecuteAddMem)},
-            {"/gold/verse",new Command("/goldverse",new string[]{ "золотой стих"},ExecuteGoldVerse)},
-            {"/add/gold/verse",new Command("/addGoldVerse",new string[]{ "добавить золотой стих"},ExecuteAddGoldVerse)},
-            {"/on/anon",new Command("/on/anon",new string[]{"включить анон" },ExecuteOnAnon)},
-            {"/off/anon",new Command("/off/anon",new string[]{"отключить анон" },ExecuteOffAnon)},
-
-            {"/admin/users",new Command("/admin/users",new string[]{"Все пользователи админу" },ExecuteAdminUsers)},
-            {"/admin/mem/all",new Command("/admin/mem/all",new string[]{"Все мемы админу" },ExecuteAdminMems)},
-            {"/anon/messages/all",new Command("/anon/messages/all",new string[]{"все неотвеченые анонимки" },ExecuteAllAnonimMessages)},
+            {"/add/mem",new Command("/add/mem",new string[]{ "+ мем"},ExAddMem)},
+            {"/add/gold/verse",new Command("/add/gold/verse",new string[]{ "добавить золотой стих"},ExAddGoldVerse)},
+            {"/turnOn/anon",new Command("/turnOn/anon",new string[]{"включить анон" },ExOnAnon)},
+            {"/turnOff/anon",new Command("/turnOff/anon",new string[]{"отключить анон" },ExOffAnon)},
+            {"/anon/read",new Command("/anon/read",new string[]{"прочесть анонимку" },ExReadAnon)},
+            {"/admin/users",new Command("/admin/users",new string[]{"Все пользователи админу" },ExAdminUsers)},
+            {"/admin/mem/all",new Command("/admin/mem/all",new string[]{"Все мемы админу" },ExAdminMems)},
+            {"/anon/messages/all",new Command("/anon/messages/all",new string[]{"все неотвеченые анонимки" },ExAllAnonimMessages)},
+            {"/anon/messages/answere",new Command("/anon/messages/answere",new string[]{"ответ на анонимку" },ExecuteOnAnswereAnon)},
+            {"/turnOff/answere",new Command("/turnOff/answere",new string[]{"отмена ответа на анонимку" },ExecuteOffAnswereAnon)},
+            
+            {"/verse/random",new Command("/verse/random",new string[]{ "Случайный стих"},ExVerse)},
+            {"/gold/verse/random",new Command("/gold/verse/random",new string[]{ "Случайный золотой стих"},ExGoldVerse)},
         };
 
         //Для полноценной команды в программу нужно:
@@ -62,7 +77,7 @@ namespace TelegramBotClean.Commandses
         /// </summary>
         /// 
         public static Command Unknow { get {
-                return new Command("clean",new string[] { }, CommandsExecutor.ExecuteUnknow);
+                return new Command("clean",new string[] { }, CommandsExecutor.ExUnknow);
             } }
         public static Command MemCommand { get { return simpleCommands["/mem"]; } }
         /// <summary>
@@ -85,7 +100,7 @@ namespace TelegramBotClean.Commandses
         public static Commands GoldVerseCommands { get { return GoldCommand + VerseCommand; } }
         public static Commands AddGoldVerseCommand { get { return AddCommand + GoldVerseCommand; } }
         public static Command GoldVerseCommand { get { return complexCommands["/gold/verse"]; } }
-        public static Command OffAnonCommand { get { return complexCommands["/off/anon"]; } }
+        public static Command OffAnonCommand { get { return complexCommands["/turnOff/anon"]; } }
         #endregion
 
 
@@ -178,7 +193,7 @@ namespace TelegramBotClean.Commandses
         }
         public static Commands SelectCommands(string text)
         {
-            Commands allCommands = new Commands(false);
+            Commands allCommands = new Commands(false,false);
             Commands selectedCommands = new Commands();
             string[] split = text.Split(' ');
             // Если в тексте больше 15 слов, то возвращаем инфу о том, что это не команда вовсе 
@@ -211,5 +226,9 @@ namespace TelegramBotClean.Commandses
         }
 
         #endregion
+    }
+    public class ZeroEquals
+    {
+        
     }
 }

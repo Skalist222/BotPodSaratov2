@@ -2,9 +2,10 @@
 {
     public abstract class CommandList : List<Command>
     {
+        public bool IsEmpty { get { return this.Count == 0; } }
         public string ToString()
         {
-            if (this.Count == 0) return "clean";
+            if (this.IsEmpty) return "clean";
             else if (this.Count == new Commands(false, false).Count) return "all";
             else
             {

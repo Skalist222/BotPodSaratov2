@@ -1,6 +1,10 @@
 ﻿
 using Telegram.Bot.Types.ReplyMarkups;
+using TelegramBotClean.Bot;
+using TelegramBotClean.Commandses;
 using TelegramBotClean.Data;
+using TelegramBotClean.MessagesDir;
+using TelegramBotClean.TextDir;
 using But = Telegram.Bot.Types.ReplyMarkups.InlineKeyboardButton;
 
 namespace TelegramBotClean.MenuDir
@@ -38,6 +42,20 @@ namespace TelegramBotClean.MenuDir
                 Add(new MesMenuRow(buttons[i]));
             }
         }
+
+        public static MesMenuTable CreateMenu(string selectedCommands, string[] data)
+        {
+            Commands commands = Commands.SelectCommands(selectedCommands);//Текст команды
+          
+            MesMenuBut[] buts = new MesMenuBut[data.Length];
+            for (int i = 0; i < buts.Length; i++)
+            {
+                buts[i] = new MesMenuBut("от:" + data[i], commands.SeparatedBySpace() + " |" + data[i]);
+            }
+            MesMenuTable table = new MesMenuTable(buts);
+            return table;
+        }
+
     };
     public class MesMenuRow : List<MesMenuBut> 
     {
@@ -54,8 +72,9 @@ namespace TelegramBotClean.MenuDir
     {
         public MesMenuBut(string text) : base(text)
         {
+            
         }
-        public MesMenuBut(string text, string data) : base(text)
+        public MesMenuBut(string text, string data) : base(Invizible.One+ text+ Invizible.One)
         {
             if (data.Length > 64) Logger.Error($"Команда в кнопке слишком большая!!!{data}");
             this.CallbackData = data;

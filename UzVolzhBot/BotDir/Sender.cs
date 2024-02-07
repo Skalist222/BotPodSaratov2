@@ -14,33 +14,46 @@ using TelegramBotClean.Commandses;
 using TelegramBotClean.CommandsDir;
 using TelegramBotClean.TextDir;
 using TelegramBotClean.MessagesDir;
+using TelegramBotClean.Bible;
+using System.Reflection;
+using System.Net.Mail;
 
 namespace TelegramBotClean.Bot
 {
     public class Sender
     {
-
-
         TelegramBotClient botClient { get; }
         CancellationToken token { get; }
         public Users Users { get; }
+
         public BotDB BotBase { get; }
+        public BibleDB BibleDb { get; }
         public Mems Mems { get; }
         public Random Random { get; }
         public TextWorker TextWorker { get; }
-        public UnansweredsMeesages UnansweredMessage { get; }
+        public UnansveredsMeesages UnansweredMessage { get; }
+        public BibleWorker BibleWorker { get; }
+        public AnonMessages AnonMessages { get; }
+
+
+
 
         public Sender(TelegramBotClient botClient, CancellationToken token)
         {
             this.botClient = botClient;
             this.token = token;
 
-            Random = new Random();
-            BotBase = new BotDB(Random);
-            Users = new Users(BotBase);          
-            Mems = new Mems(BotBase,botClient,token);
-            TextWorker = new TextWorker(BotBase,Random);
-            UnansweredMessage = new UnansweredsMeesages(BotBase);
+            this.Random = new Random();
+            this.BotBase = new BotDB(Random);
+            this.BibleDb = new BibleDB(Random);
+
+            this.Users = new Users(BotBase);          
+            this.Mems = new Mems(BotBase,botClient,token);
+            this.TextWorker = new TextWorker(BotBase,Random);
+            this.UnansweredMessage = new UnansveredsMeesages(BotBase);
+            this.BibleWorker = new BibleWorker(BibleDb,BotBase,Random);
+            this.AnonMessages = new AnonMessages();
+           
         }
 
         private async Task SendText(string text, long idChat)
@@ -101,16 +114,11 @@ namespace TelegramBotClean.Bot
         // Что можно делать извне
         public async Task SendMessage(MessageI message, long idChat)
         {
-            if (message.IsText) SendText(message.Text,idChat);
-            if (message.HavePhoto)
+            if (message.Type == MessageTypes.Text) SendText(message.Text,idChat);
+            if (message.Type == MessageTypes.Photo || message.Type == MessageTypes.PhotoText)
             {
-                if (message.Photo is not null) SendImage(message.Photo, idChat, message.Text);
-                else SendImage(message.ImageId, idChat,message.Text);
+               SendImage(message.FileId, idChat,message.Text);
             }
-            else
-            {
-                
-            } 
         }
         public async Task SendMessage(string message, long idChat)
         {
@@ -142,7 +150,6 @@ namespace TelegramBotClean.Bot
             }
         }
 
-
         public async Task SendAdminMessage(string message)
         {
            SendText(message, 1094316046L);
@@ -165,7 +172,15 @@ namespace TelegramBotClean.Bot
             }
             if (u.TypeUser == UserTypes.Teacher)
             {
-                menu = new TeacherMenu();
+                if (!u.TeacherInfo.InAnswerAnon)
+                {
+                    menu = new TeacherMenu();
+                }
+                else
+                {
+                    menu = new TeacherMenuAnswer();
+                }
+               
             }
 
             ReplyKeyboardMarkup mrkp = new ReplyKeyboardMarkup(keyboard: menu.ButtonTable);
@@ -202,32 +217,59 @@ namespace TelegramBotClean.Bot
 
         public async void CreateAnswere(Update up)
         {
-            DateTime start = DateTime.Now;
-            MessageI receivedMes = new MessageI(up,botClient,token);// Полученное сообщение
-        
-            //Во первых проверяем есть ли команда
-            if (receivedMes.HaveCommand)
+            DateTime startTimeWork = DateTime.Now;
+
+            Telegram.Bot.Types.User telegramUser = null;
+            if (up.Message is not null) telegramUser = up.Message.From;
+            else telegramUser = up.CallbackQuery.From;
+
+            
+            User user = Users.GetOrCreate(telegramUser, BotBase);//инициализируем пользователя
+            if (user is null)
             {
-                Command selectedCommand = receivedMes.Commands.AsCommand();
-                string anyCommand = selectedCommand.Execute(this,receivedMes);
-                if (anyCommand == "anon") 
+                Logger.Error("Не удалось инициировать пользователя");
+                return;
+            } // Если даже после этого этапа, юзер не определен значит есть какаято ошибка
+            MessageI receivedMes = new MessageI(up, user);// инициализируем сообщение
+            string sideMenu = user.SideMenu();
+            Command selectedCommand = receivedMes.Commands.AsCommand();
+
+            if (sideMenu == "no")// Если пользователь находится в стандартном для него меню
+            {
+                if (receivedMes.HaveCommand)
                 {
-                    if (selectedCommand == Commands.OffAnonCommand)
-                        CommandsExecutor.ExecuteOffAnon(this, receivedMes);
-                    else
-                        CommandsExecutor.CreateAnonimMes(this, receivedMes);
+                    selectedCommand.Execute(this,receivedMes);
+                }
+                else
+                {
+                    if (receivedMes.Type == MessageTypes.Photo)
+                    {
+                        Console.WriteLine("Пришло фото без допов");
+                        SendAdminMessage("Пришло фото без допов");
+                    }
+                    SendAdminMessage("Пришло сообщение без команд");
                 }
             }
             else
             {
-                if (receivedMes.HavePhoto)
+                if (sideMenu == "anon")
                 {
-                    Console.WriteLine("Пришло фото");
+                    if (selectedCommand == Commands.OffAnonCommand)
+                        CommandsExecutor.ExOffAnon(this, receivedMes);
+                    else
+                        CommandsExecutor.ExCreateAnonimMes(this, receivedMes);
                 }
-                SendAdminMessage("Пришло сообщение без команд");
+                if (sideMenu == "answerAnon")
+                {
+                    if (selectedCommand == Commands.SelectCommands("/turnOff /answere").AsCommand())
+                        CommandsExecutor.ExecuteOffAnswereAnon(this, receivedMes);
+                    else
+                        CommandsExecutor.ExecuteSendAnswerAnon(this, receivedMes);
+                }
             }
+
             DateTime finish = DateTime.Now;
-            SendAdminMessage(""+(finish-start).TotalSeconds+" sec.");
+            SendAdminMessage(""+(finish-startTimeWork).TotalSeconds+" sec.");
         }
     }
 }

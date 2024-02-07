@@ -1,209 +1,278 @@
-﻿
-using System.Drawing;
-using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types;
-using Telegram.Bot;
-using TelegramBotClean.Commandses;
-using TelegramBotClean.Data;
+﻿using TelegramBotClean.Commandses;
+
+using TelegramBotClean.Userses;
+using User = TelegramBotClean.Userses.User;
+using Update = Telegram.Bot.Types.Update;
+using MessageTypeT = Telegram.Bot.Types.Enums.MessageType;
 using TelegramBotClean.TextDir;
 
 namespace TelegramBotClean.Messages
 {
+
     public class MessageI
     {
-        long id = 0;
-        User senderUser = null;
-        long senderId = 0;//айди получателя, кому направлено данное сообщение
-        long recipient = 0;//айди отправителя, от кого было направлено сообщение
-        string text = "";//текст сообщения
-        Bitmap photo = null;//картинка сообщения
-        string imageId = "";//айди присланной картинки
-        string command = "";//полученная команда
-        string smile = "";// если получен стикер, будет определен смайлик этого стикера
+        // внутренние параметры
+        string text;
         Commands commands;
-        long chatId = 0;
+
+        //геттеры Неизменимых параметров
+        public long Id { get; }
+        public User Sender { get; }
       
-
-        public long Id { get { return id; } }
-        public string Text { get { return text; } }
-        public string ImageId { get { return imageId; } }
-        public string Command { get { return command; } }
-        public string Smile { get { return smile; } }
-        public Bitmap Photo { get { return photo; } }
-        /// <summary>
-        /// Отправитель сообщения
-        /// </summary>
-        public long SenderId { get { return senderId; } }
-        public User Sender { get { return senderUser; } }
-        public long ChatId { get { return chatId; } }
-
-
-        /// <summary>
-        /// Получатель сообщения
-        /// </summary>
-        public long Recipient { get { return recipient; } }
-        public Commands Commands { get { return commands; } }
-
-
-
-        public void SetSender(long id) { senderId = id; }
-        public void SetRecipient(long id) { recipient = id; }
-        /// <summary>
-        /// Записывает в сообщение новый текст
-        /// </summary>
-        /// <param name="newText"></param>
-        public void SetText(string newText) { text = newText; }
-
-        public bool IsText { get { return text != "" && imageId == "" && command == "" && smile == ""; } }
-        public bool IsPhoto { get { return (photo is not null || imageId != "") && text == ""; } }
-        //public bool IsPhotoWithText { get { return (photo is not null || imageId != "") && text != ""; } }
-        public bool IsCommand { get { return command != "" && text == ""; } }
-        public bool IsCommandInText { get { return command != "" && text != ""; } }
-        public bool IsSticker { get { return smile != ""; } }
-        public bool HaveCommand { get { return command != "" ; } }
-        public bool HaveText { get { return text != ""; } }
-        public bool HavePhoto { get { return photo is not null || imageId != ""; } }
-
-
-        public MessageI(string text, string fileId="", long messageId=0, long chatId=0)
-        {
-            this.text = text;
-            this.imageId = fileId;
-            this.id = messageId;
-            this.chatId = chatId;
-        }
-        public MessageI(string text,Bitmap photo)
-        {
-            this.text = text;
-            this.photo = photo;
-        }
-
-        public MessageI(Update up, TelegramBotClient botClient, CancellationToken token)
-        {
-            //начинаю формирование полученого сообщения
-            if (up.Message != null)
-            {
-                senderUser = up.Message.From;
-                //получено обычное сообщение или нажата кнопка ОСНОВНОГО меню
-                Message mes = up.Message;
-                //Так делать нельзя, но мне так удобнее
-                SetParamFromTelegramMessage(mes, botClient, token);
-                SelectCommands(ref commands,text);
-            }
-            else
-            {
-                if (up.CallbackQuery != null)
-
-                {// Нажата кнопка в сообщении
-                    text = up.CallbackQuery.Data;
-                    senderUser = up.CallbackQuery.From;
-                    senderId = senderUser.Id;
-                    SelectCommands(ref commands, text);
-                }
-                else
-                {
-                    //Вот тут уже поинтереснее... я не знаю какой может быть другой вариант
-                }
-            }
-        }
-        public MessageI(Message mes, TelegramBotClient botClient, CancellationToken token)
-        {
-            if (mes is null) return;
-            SetParamFromTelegramMessage(mes, botClient, token);
-        }
-        private void SetParamFromTelegramMessage (Message mes, TelegramBotClient botClient, CancellationToken token)
-        {
-            chatId = mes.Chat.Id;
-            id = mes.MessageId;
-            senderId = mes.From.Id;
-            MessageType mesType = mes.Type;
-
-            if (mesType == MessageType.Photo)
-            {
-                text = mes.Caption ?? "";// Если Описание к фото было, то заполняем текст описанием
-                string.Join(text, text);
-                
-                SaveImage(botClient, mes, token);
-            }
-            if (mesType == MessageType.Text)
-            {
-                text = mes.Text;
-            }
-            if (mesType == MessageType.Sticker)
-            {
-                smile = mes.Sticker!.Emoji ?? "!";
-            }
-        }
-        private void SaveImage(TelegramBotClient botClient, Message mes, CancellationToken token)
-        {
-            Telegram.Bot.Types.File fileInfo = null;
-            imageId = mes.Photo[mes.Photo.Length - 1].FileId;
-            if (mes.Type == MessageType.Photo)
-            {
-                fileInfo = botClient.GetFileAsync(imageId).Result;
-            }
-
-            string filePath = fileInfo.FilePath;
-            string newNameFile = Directory.GetCurrentDirectory() + "\\" + fileInfo.FileUniqueId[0..15] + " " + Path.GetFileName(filePath);
-            Bitmap bm;
-            using (FileStream fileStream = new FileStream(newNameFile, FileMode.Create))
-            {
-                botClient.DownloadFileAsync(
-                    filePath: filePath,
-                    destination: fileStream,
-                    cancellationToken: token).GetAwaiter().GetResult();
-                bm = (Bitmap)Bitmap.FromStream(fileStream);
-                photo = new Bitmap(bm);
-                bm.Dispose();
-                bm = null;
-            }
-            System.IO.File.Delete(newNameFile);
-        }
-        private void SelectCommands(ref Commands commands, string text)
-        {
-            string cleanText = text.Replace(Invizible.One, "");
-            commands = Commands.SelectCommands(cleanText);//Получаем команды
-            // проверяю не команда ли это
-            if (text![0].ToString() == Invizible.One)
-            {
-                // Значит это Нажата кнопка!
-                if (commands.ToString() == "clean")
-                {
-                    //Команда не определена
-                    command = "commandNotFound";
-                }
-                else
-                {
-                    command = commands.ToString();
-                }
-            }
-            else
-            {
-                command = commands.ToString();
-            }
-        }
-
-        /// <summary>
-        /// Определяет есть ли в списке полученных команд введенная
-        /// </summary>
-        /// <param name="m">Сообщение на проверку</param>
-        /// <param name="c">Введенная команда</param>
-        /// <returns></returns>
-        public static bool operator |(MessageI m, Command c)
-        {
-            return m.Commands.Have(c);
-        }
-        /// <summary>
-        /// Определяет, является ли первой командой из введенных та, которую получил оператор
-        /// </summary>
-        /// <param name="m">Сообщение на проверку</param>
-        /// <param name="c">Введенная команда</param>
-        /// <returns></returns>
-        public static bool operator &(MessageI m, Command c)
-        {
-            return m.Commands.FirstEqual(c);
-        }
+        public string FileId { get; }
+        public long ChatId { get; }
+        public MessageType Type { get; }
        
+        
+
+
+        //геттеры Изменяемых параметров
+        public string Text { get { return text; } }
+        public Commands Commands { get { return commands; } }
+        //побочные геттеры
+        public long SenderId { get { return Sender.Id; } }
+        // Если команда нулева, и не содержитни одной команды, то она считается пустой
+        public bool HaveCommand { get { return Commands is not null && !Commands.IsEmpty; } }
+
+
+        // сеттеры
+        public void SetText(string value){text = value; }
+        private void SetCommands(Commands commands)
+        {
+            this.commands = commands;
+        }
+
+        public MessageI(string text)
+        {
+            SetText(text);
+            Type = MessageTypes.Text;
+        }
+        public MessageI(long id, long chatId, string text, User sender, string fileId,MessageType type)
+        {
+            this.text = text;
+            Id = id;
+            Sender = sender;
+            FileId = fileId;
+            ChatId = chatId;
+            Type = type;
+            SetCommands(new Commands());
+        }
+        public MessageI(Update up,User user)
+        {           
+            if (up.Message is not null)
+            {
+                Id = up.Message.MessageId;
+                Sender = user;
+                ChatId = up.Message.Chat.Id;
+                MessageTypeT t = up.Message.Type;
+                SetText(up.Message.Text??"");
+                string typeString = up.Message.Type.ToString();
+                SelectCommans();
+                Type = MessageTypes.Identify(typeString,Text,Commands);                
+            }
+            if (up.Message is null)
+            {
+                if (up.CallbackQuery.Data is not null)
+                {
+                    SetText(up.CallbackQuery.Data.ToString().Split('|')[0]);
+                    SelectCommans();
+                }
+            }
+        }
+        private void SelectCommans()
+        {
+            SetCommands(new Commands(false, true));
+
+            if (Text != "")
+            {
+                string cleanText = Text.Replace(Invizible.One, "");
+                if (cleanText == "")
+                {
+                   
+                    return;
+                }
+                else
+                {
+                    SetCommands(Commands.SelectCommands(cleanText));
+                }
+                if (text[0] + "" == Invizible.One) Commands.FromButtonTrue();
+                else Commands.FromButtonFalse();
+            }
+        }
     }
-   
+
+    //public class MessageI3
+    //{
+    //    /**/
+    //    long id = 0;
+    //    User senderUser = null;
+    //    long senderId = 0;//айди получателя, кому направлено данное сообщение
+    //    string text = "";//текст сообщения
+
+    //    string fileId = "";//айди присланной картинки
+    //    string command = "";//полученная команда
+    //    string smile = "";// если получен стикер, будет определен смайлик этого стикера
+    //    Commands commands;
+    //    long chatId = 0;
+    //    public MessageType Type { get; }
+
+
+    //    public long Id { get { return id; } }
+    //    public string Text { get { return text; } }
+    //    public string FileId { get { return fileId; } }
+
+
+    //    /// <summary>
+    //    /// Отправитель сообщения
+    //    /// </summary>
+    //    /**/
+    //    public long SenderId { get { return senderId; } }
+    //    /**/
+    //    public User Sender { get { return senderUser; } }
+    //    /**/
+    //    public long ChatId { get { return chatId; } }
+
+
+
+    //    /**/
+    //    public Commands Commands { get { return commands; } }
+
+
+
+    //    /// <summary>
+    //    /// Записывает в сообщение новый текст
+    //    /// </summary>
+    //    /// <param name="newText"></param>
+    //    public void SetText(string newText) { text = newText; }
+
+
+    //    public bool HaveCommand { get { return !Commands.IsEmpty; } }
+
+
+
+    //    public MessageI3(string text, string fileId = "", long messageId = 0, long chatId = 0)
+    //    {
+    //        Type = MessageTypes.TextPhoto;
+    //        this.text = text;
+    //        this.fileId = fileId;
+    //        this.id = messageId;
+    //        this.chatId = chatId;
+    //    }
+ 
+
+       
+        
+       
+    //    private void SelectCommands(ref Commands commands, string text)
+    //    {
+    //        string cleanText = text.Replace(Invizible.One, "");
+    //        if (cleanText == "")
+    //        {
+    //            command = "commandNotFound";
+    //            commands = new Commands(false, true);
+    //            return;
+    //        };
+    //        commands = Commands.SelectCommands(cleanText);//Получаем команды
+    //        // проверяю не команда ли это
+    //        if (text![0].ToString() == Invizible.One)
+    //        {
+
+    //            if (commands.IsEmpty)
+    //            {
+    //                //Команда не определена
+    //                command = "commandNotFound";
+    //            }
+    //            else
+    //            {
+    //                command = commands.ToString();
+    //            }
+    //            commands.FromButtonTrue();
+    //        }
+    //        else
+    //        {
+    //            command = commands.ToString();
+    //            commands.FromButtonFalse();
+    //        }
+    //    }
+
+
+
+    //}
+
+    public class Messages : List<MessageI>
+    {
+        public Messages() :base(){ }
+        //public Messages(DataTable fromDB) : base()
+        //{
+        //    for (int i = 0; i < fromDB.Rows.Count; i++)
+        //    {
+        //        DataRow r = fromDB.Rows[i];
+        //        long messageId = Convert.ToInt64(r["id"].ToString());
+        //        string fileId = r["fileId"].ToString();
+        //        string text = r["text"].ToString();
+        //        MessageType type = MessageTypes.Identify(r["type"].ToString());
+        //        Add(new MessageI(text,fileId,messageId)) ;
+        //    }
+        //}
+    }
+    public class MessageType
+    {
+        public string Name { get; }
+        public string Description { get; }
+        public MessageType(string code,string desc) 
+        {
+            Description = desc;
+            Name = code;
+        }
+        public static bool operator ==(MessageType t1, MessageType t2)
+        {
+            return t1.Name == t2.Name;
+        }
+        public static bool operator !=(MessageType t1, MessageType t2)
+        {
+            return !(t1 == t2);
+        }
+    }
+    public class MessageTypes
+    {
+        private static Dictionary<string, MessageType> allTypes = new Dictionary<string, MessageType>
+        {
+            { "Text", new MessageType( "Text", "Только текст") },
+            { "Photo", new MessageType("Photo", "Только фото") },
+            { "PhotoText", new MessageType("PhotoText", "Текст с фото") },
+            { "PhotoCommand", new MessageType("PhotoCommand", "Команда с фото") },
+            { "Video", new MessageType("Video", "Только видео") },
+            { "VideoText", new MessageType("VideoText", "Только видео") },
+            { "VideoCommand", new MessageType("VideoCommand", "Только видео") },
+            { "Sticker", new MessageType("Sticker", "Стикер") }
+        };
+        public static MessageType Text { get { return allTypes["Text"]; } }
+        public static MessageType Photo { get { return allTypes["Photo"]; } }
+        public static MessageType PhotoText { get { return allTypes["PhotoText"]; } }
+        public static MessageType PhotoCommand { get { return allTypes["PhotoCommand"]; } }
+        public static MessageType Video { get { return allTypes["Video"]; } }
+        public static MessageType VideoText { get { return allTypes["VideoText"]; } }
+        public static MessageType VideoCommand { get { return allTypes["VideoCommand"]; } }
+        public static MessageType Sticker { get { return allTypes["Sticker"]; } }
+
+        public static MessageType Emprty { get { return new MessageType("Empty", "empty"); } }
+        /// <summary>
+        /// Определяет тип по названию типа
+        /// </summary>
+        /// <param name="telegramType"></param>
+        /// <returns></returns>
+        public static MessageType Identify(string telegramType, string text,Commands commands)
+        {
+            if (text != "") text = commands.IsEmpty ? "Command" : "Text";
+            if (allTypes.ContainsKey(telegramType + text))
+            {
+                return allTypes[telegramType + text];
+            }
+            else
+            {
+                return Emprty;
+            }
+        }
+
+    }
 }

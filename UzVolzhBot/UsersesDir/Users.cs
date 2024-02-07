@@ -1,5 +1,8 @@
-﻿using System.Data;
+﻿using Microsoft.Identity.Client;
+using System.Data;
+using Telegram.Bot.Types;
 using TelegramBotClean.Data;
+using Logger = TelegramBotClean.Data.Logger;
 
 namespace TelegramBotClean.Userses
 {
@@ -34,6 +37,15 @@ namespace TelegramBotClean.Userses
                 }
             }
         }
+        public bool Have(long idUser)
+        {
+            return this.Where(el => el.Id == idUser).Count() == 1;
+        }
+        public bool Have(User user)
+        {
+            return Have(user.Id);
+        }
+
         public Users() : base() { }
         public Users(DataTable dbTable):base()
         {
@@ -112,6 +124,47 @@ namespace TelegramBotClean.Userses
         public void Add(User user)
         {
             base.Add(user);
+        }
+        public User GetOrCreate(Telegram.Bot.Types.User telegramUser, BotDB botBase)
+        {
+            User newUser = new User(telegramUser);
+
+            //Если список пользователей пустой
+            if (this.Count == 0)
+            {
+                //Пытаемся добавить пользователя в базу данных
+                return AttemptAddToBase(newUser, botBase);
+            }
+            //Если список пользователей содержит хоть одного пользователя
+            else
+            {
+                //Если пользователь не найден
+                if (!Have(telegramUser.Id))
+                {
+                    //Пытаемся добавить пользователя в базу данных
+                    return AttemptAddToBase(newUser, botBase);
+                }
+                else
+                {
+                    // если пользователь нашелся
+                    return this[newUser.Id];
+                }
+            }
+        }
+        private User AttemptAddToBase(User user,BotDB botBase)
+        {
+            if (botBase.CreateUser(user))
+            {
+                // если получилось добавить в базу данных, добавляем в список пользователей
+                Add(user);
+                // возвращаем имеено того пользователя, который находится в списке а не нового созданного извне
+                return this[user.Id];
+            }
+            else
+            {
+                Logger.Error("При добавке пользователя произошли ошибки");
+                return null;
+            }
         }
     }
 }

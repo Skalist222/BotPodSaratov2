@@ -66,18 +66,9 @@ namespace TelegramBotClean.Commandses
             }
             return false;
         }
-        public string Execute(Sender sender, MessageI mes)
+        public void Execute(Sender sender, MessageI mes)
         {
-            string validation = CommandsExecutor.ValidAll(sender, mes);
-            if (validation == "OK")
-            {
-                worker(sender, mes);
-                return "OK";
-            }
-            else
-            {
-                return validation;
-            }
+            worker(sender, mes);
         }
 
 

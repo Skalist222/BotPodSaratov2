@@ -1,4 +1,5 @@
-﻿using TelegramBotClean.Bot;
+﻿using Telegram.Bot.Types;
+using TelegramBotClean.Bot;
 using TelegramBotClean.Commandses;
 using TelegramBotClean.Data;
 using TelegramBotClean.MemDir;
@@ -14,49 +15,67 @@ namespace TelegramBotClean.CommandsDir
     public class CommandsExecutor
     {
         //Adminka
-        public static void ExecuteAdmin(Sender sender, MessageI mes)
+        public static void ExAdmin(Sender sender, MessageI mes)
         {
             //Админска
         }
-        public static void ExecuteAdminMems(Sender sender, MessageI mes)
+        public static void ExAdminMems(Sender sender, MessageI mes)
         {
+            //for (int i = 0; i < sender.Mems.Count; i++)
+            //{
+
+            //}
+            long idMes = sender.Mems[0].Message.Id;
+           
+
+
             //получение всех мемов
         }
-        public static void ExecuteAdminUsers(Sender sender, MessageI mes)
+        public static void ExAdminUsers(Sender sender, MessageI mes)
         {
             //получение всех мемов
         }
 
-        public static void ExecuteAllAnonimMessages(Sender sender, MessageI mes)
+        public static void ExAllAnonimMessages(Sender sender, MessageI mes)
         {
-            string txtInData = "seenAnon";//Текст команды
-            Dictionary<string ,UnansweredsMeesages> groups =  sender.UnansweredMessage.GetGroupsMessages();
-            string[] uniqNames = groups.Select(el => el.Key).ToArray();
-            MesMenuBut[] buts = new MesMenuBut[groups.Count];
-            for (int i = 0; i <buts.Length;i++)
-            {
-                buts[i] = new MesMenuBut("от:"+uniqNames[i],txtInData+"|"+ uniqNames[i]);
-            }
-            MesMenuTable table = new MesMenuTable(buts);
+            GroupsUbabsvereMessage groups = sender.UnansweredMessage.GetGroupsMessages();
+            string[] uniqNames = groups.Select(el => el.UniqUserName).ToArray();
+            //read anon - текст команды, который отправ
+            MesMenuTable table = MesMenuTable.CreateMenu("read anon", uniqNames);
             sender.SendMessageMenu(mes.SenderId,table,"Анонимные сообщения:");
             //получение всех мемов
         }
+        public static void ExReadAnon(Sender sender, MessageI mes)
+        {
+            string uniqNameAnon = mes.Text.Split('|')[1];
+            GroupsUbabsvereMessage groups = sender.UnansweredMessage.GetGroupsMessages();
+            UnansveredsMeesages messages = groups[uniqNameAnon].Messages;
+            long idTeen = groups[uniqNameAnon].IdAnonUser;
+            string textMessage = "Сообщение от " + uniqNameAnon + ":" + TextWorker.Ln + TextWorker.Ln;
+            for (int i = 0; i < messages.Count; i++)
+            {
+                textMessage += messages[i].Text + TextWorker.Ln;
+            }
+            sender.SendMessage(textMessage, mes.SenderId);
+            MesMenuTable table = new YesNoMenu("answere anon messages |"+ idTeen, "turnOff answere");
+            sender.SendMessageMenu(mes.SenderId, table, "Ответить на анонимку?");
+        }
 
-        public static void ExecuteUnknow(Sender sender, MessageI mes)
+        public static void ExUnknow(Sender sender, MessageI mes)
         {
             Console.WriteLine("Получена неизвестная команда");
-            MesMenuTable menu = new YesNoMenu("Да","Нет");
+            
             //sender.SendMenuMessage(new YesNoMenu("hfhfh", "asdasd"), sender.Users[mes.SenderId],"Менушка да нетка");
   
         }
-        public static void ExecuteStart(Sender sender, MessageI mes)
+        public static void ExStart(Sender sender, MessageI mes)
         {
             sender.SendAdminMessage("Получена команда старт");
             User user = sender.Users[mes.SenderId];
             // При начале работы бота или при нажатии на кнопку старт
             if (user == null)
             {
-                if (sender.BotBase.CreateUser(new User(mes.Sender)))
+                if (sender.BotBase.CreateUser(new User(new Telegram.Bot.Types.User() )))
                 {
                     sender.Users.Add(sender.BotBase.GetUser(mes.SenderId));
                     sender.SendAdminMessage("Создан новый пользователь " + sender.Users[mes.SenderId].ToString());
@@ -77,45 +96,58 @@ namespace TelegramBotClean.CommandsDir
                 sender.SendMenu(mes.SenderId, "Рад тебя снова видеть!");
             }
         }
-        public static void ExecuteMem(Sender sender, MessageI mes)
+        public static void ExMem(Sender sender, MessageI mes)
         {
             sender.SendAdminMessage("Получена команда мем");
             Console.WriteLine("Команда мем");
             MessageI retMes = sender.Mems.GetMessageRandomMem2(sender.Random);
-            retMes.SetText(sender.BotBase.GetRandomAnswer("mem"));
-            sender.SendMessage(retMes,mes.SenderId);
+            if (retMes is not null)
+            {
+                retMes.SetText(sender.BotBase.GetRandomAnswer("mem"));
+            } 
+            else  retMes = new MessageI("Простите, но в базе данных нет мемов");
+            sender.SendMessage(retMes, mes.SenderId);
+
         }
-        public static void ExecuteVerse(Sender sender, MessageI mes)
+        public static void ExVerse(Sender sender, MessageI mes)
         {
             sender.SendAdminMessage("Получена команда Стих");
+            string retText = sender.BibleWorker.GetRandomVerse().TextWithAddress;
+            sender.SendMessage(retText, mes.SenderId);
         }
-        public static void ExecuteInfo(Sender sender, MessageI mes)
+        public static void ExGoldVerse(Sender sender, MessageI mes)
+        {
+            sender.SendAdminMessage("Получение случайного золотого стиха");
+            string retText = sender.TextWorker.RandomAnswere("золотой") + " " + sender.TextWorker.RandomAnswere("стих") + TextWorker.Ln +
+                sender.BibleWorker.GetRandomGoldVerse().TextWithAddress;
+            sender.SendMessage(retText, mes.SenderId);
+        }
+
+
+        public static void ExInfo(Sender sender, MessageI mes)
         {// сделано
             sender.SendAdminMessage("Получена команда Инфо");
             sender.SendMessage(Config.Info.Text,mes.SenderId);
         }
-        public static void ExecuteHelp(Sender sender, MessageI mes)
+        public static void ExHelp(Sender sender, MessageI mes)
         {// сделано
             sender.SendAdminMessage("Получена команда помощь");
             sender.SendMessage(TextWorker.Help(sender.Users[mes.SenderId]), mes.SenderId);
         }
-        public static void ExecuteHowWorkButton(Sender sender, MessageI mes)
+        public static void ExHowWorkButton(Sender sender, MessageI mes)
         {// сделано
             sender.SendAdminMessage("Получена команда как работают кнопки");
-            sender.SendMessage(TextWorker.Help(sender.Users[mes.SenderId]), mes.SenderId);
+            sender.SendMessage(TextWorker.HowWorkButton(sender.Users[mes.SenderId]), mes.SenderId);
         }
-        public static void ExecuteGoldVerse(Sender sender, MessageI mes)
-        {
-            sender.SendAdminMessage("Получена команда Золотой стих");
-        }
-        public static void ExecuteAddGoldVerse(Sender sender, MessageI mes)
+        
+        public static void ExAddGoldVerse(Sender sender, MessageI mes)
         {
             sender.SendAdminMessage("Получена команда добавления золотого стих");
         }
-        public static void ExecuteAddMem(Sender sender, MessageI mes)
+        public static void ExAddMem(Sender sender, MessageI mes)
         {
             MessageI toSendMes = new MessageI("");
-            if (mes.HavePhoto)
+            if (mes.Type == MessageTypes.Photo)
             {
                 if (sender.Mems.Add(new Mem(mes)))
                 {
@@ -136,10 +168,12 @@ namespace TelegramBotClean.CommandsDir
 
             // после всех обработак отправляем админу инфу о меме
             sender.SendAdminMessage("Получен этот мем от " + sender.Users[mes.SenderId].Name + $"({mes.SenderId}):");
-            sender.SendAdminMessage("file:" + mes.ImageId + " message:" + mes.Id);
-            sender.SendAdminMessage(mes.Photo);
+            sender.SendAdminMessage("file:" + mes.FileId + " message:" + mes.Id);
+            sender.SendAdminMessage(mes.FileId);
         }
-        public static void ExecuteOnAnon(Sender sender, MessageI mes)
+
+
+        public static void ExOnAnon(Sender sender, MessageI mes)
         {
             User u = sender.Users[mes.SenderId];
             if (u.TypeUser == UserTypes.Teen)
@@ -148,7 +182,7 @@ namespace TelegramBotClean.CommandsDir
                 sender.SendMenu(mes.SenderId, "Включена анонимная отправка сообщений");
             }
         }
-        public static void ExecuteOffAnon(Sender sender, MessageI mes)
+        public static void ExOffAnon(Sender sender, MessageI mes)
         {
             User u = sender.Users[mes.SenderId];
             if (u.TypeUser == UserTypes.Teen)
@@ -159,23 +193,50 @@ namespace TelegramBotClean.CommandsDir
                 
             }
         }
-       
-        
-        // Запускаются без команды
-        public static void CreateAnonimMes(Sender sender, MessageI mes)
+        public static void ExCreateAnonimMes(Sender sender, MessageI mes)
         {
-            sender.BotBase
-                .CreateAnonMessage(
-                    mes, 
-                    sender.Users[mes.SenderId].TeenInfo.AnonName
-                );
-            sender.UnansweredMessage.Add(new UnansweredAnonimMessage(
-                mes.Text,
-                sender.Users[mes.SenderId].TeenInfo.AnonName,
-                mes.SenderId,
-                (int)mes.Id
-                ));
+            Console.WriteLine("Обработка анонимных сообщений");
         }
+
+        public static void ExecuteOnAnswereAnon(Sender sender, MessageI mes)
+        {
+            User u = sender.Users[mes.SenderId];
+            long idTeen = Convert.ToInt64(mes.Text.Split('|')[1]);
+            if (u.TypeUser == UserTypes.Teacher)
+            {
+                u.TeacherInfo.TurnOnAnswerOnAnon(idTeen);
+                sender.SendMenu(mes.SenderId, "Отправленное дальше сообщение будет направлено ученику");
+            }
+        }
+        public static void ExecuteOffAnswereAnon(Sender sender, MessageI mes)
+        {
+            User u = sender.Users[mes.SenderId];
+           
+            if (u.TypeUser == UserTypes.Teacher)
+            {
+                u.TeacherInfo.TurnOffAnswerOnAnon();
+                sender.SendMenu(mes.SenderId, "Отправка ответа отменена");
+            }
+        }
+        public static void ExecuteSendAnswerAnon(Sender sender, MessageI mes)
+        {
+            User Teacher = sender.Users[mes.SenderId];
+            User Teen = sender.Users[Teacher.TeacherInfo.IdTeenAnonMessage];
+            if (Teacher.TypeUser == UserTypes.Teacher)
+            {
+                sender.UnansweredMessage.SetAnswered(Teen.Id);
+                sender.SendMessage($"Ответ на анонимку от ({Teacher.UniqName})", Teen.Id);
+                sender.SendMessage(mes.Text, Teen.Id);
+                Teacher.TeacherInfo.TurnOffAnswerOnAnon();
+                sender.SendMenu(Teacher.Id,"Ответ отправлен!");
+                
+            }
+            ExecuteOffAnswereAnon(sender,mes);
+        }
+
+
+        // Запускаются без команды
+       
 
         //Внутренние проверки
         private static bool ValidAnonimus(User user)
@@ -186,11 +247,22 @@ namespace TelegramBotClean.CommandsDir
             }
             else return false;
         }
+        private static bool ValidAnswerOnAnonim(User user)
+        {
+            if (user.TypeUser == UserTypes.Teacher)
+            {
+                return user.TeacherInfo.InAnswerAnon;
+            }
+            else return false;
+        }
+
         public static string ValidAll(Sender sender, MessageI mes)
         {
             if (ValidAnonimus(sender.Users[mes.SenderId])) return "anon";
+            if (ValidAnswerOnAnonim(sender.Users[mes.SenderId])) return "answerAnon";
             return "OK";
         }
+      
 
     }
     

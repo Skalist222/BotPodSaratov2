@@ -10,6 +10,7 @@ namespace TelegramBotClean.MenuDir
         public MenuButton(string text) : base(Invizible.One + text + Invizible.One) { TextButton = text; }
         //Основные кнопки
         public static MenuButton InfoBut { get { return new MenuButton("Инфо"); } }
+        public static MenuButton HelpBut { get { return new MenuButton("Помощь"); } }
         public static MenuButton MemBut { get { return new MenuButton("Мем"); } }
         //Кнопки администратора
         public static MenuButton UsersBut { get { return new MenuButton("Пользователи"); } }
@@ -17,7 +18,10 @@ namespace TelegramBotClean.MenuDir
 
         public static MenuButton OnAnonBut { get { return new MenuButton("Включить анон"); } }
         public static MenuButton OffAnonBut { get { return new MenuButton("Отключить анон"); } }
-        public static MenuButton AllAnonMessages { get { return new MenuButton("Анонимные сообщения "+ InvizibleEquals.All); } }
+        public static MenuButton OffAnsvereAnonBut { get { return new MenuButton("Отмена отправки ответа"); } }
+        public static MenuButton AllAnonMessagesBut { get { return new MenuButton("Анонимные сообщения "+ InvizibleEquals.All); } }
+        public static MenuButton RandomVerseBut { get { return new MenuButton("Случайный стих"); } }
+        public static MenuButton RandomGoldVerseBut { get { return new MenuButton("Случайный золотой стих"); } }
     }
     public class MenuRow : List<MenuButton>
     {
@@ -67,9 +71,9 @@ namespace TelegramBotClean.MenuDir
         }
         public BaseMenu()
         {
-            MenuButton b1 = MenuButton.InfoBut;
-            //MenuButton b2 = MenuButton.MemBut;
-            table = new MenuTable(b1);
+            MenuButton b1 = MenuButton.HelpBut;
+            MenuButton b2 = MenuButton.MemBut;
+            table = new MenuTable(b1,b2);
         }
     }
 
@@ -95,8 +99,18 @@ namespace TelegramBotClean.MenuDir
     {
         public TeacherMenu() : base()
         {
-            MenuButton b1 = MenuButton.AllAnonMessages;
-            table.Add(b1);
+            MenuButton b1 = MenuButton.AllAnonMessagesBut;
+            MenuButton b2 = MenuButton.RandomVerseBut;
+            MenuButton b3 = MenuButton.RandomGoldVerseBut;
+            table.Add(b1,b2,b3);
+        }
+    }
+    public class TeacherMenuAnswer : BaseMenu
+    {
+        public TeacherMenuAnswer() : base()
+        {
+            MenuButton b1 = MenuButton.OffAnsvereAnonBut;
+            table = new MenuTable(b1);
         }
     }
 

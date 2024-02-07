@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
+using System.Timers;
+using TelegramBotClean.Bible;
 using TelegramBotClean.Commandses;
 using TelegramBotClean.MemDir;
 using TelegramBotClean.Messages;
@@ -32,12 +34,14 @@ namespace TelegramBotClean.Data
             }
         }
         public DataTable AllTables { get { return allTables; } }
-        public DataTable GetInfoTable(string name) {
+        public DataTable GetInfoTable(string name)
+        {
 
             DataTable t = new DataTable();
             var a = infoTables.Where(el => el.Key.ToLower() == name.ToLower());
             var b = infoTables.Where(el => el.Key.ToLower() == name.ToLower()).FirstOrDefault(new KeyValuePair<string, DataTable>("", new DataTable()));
-            return b.Value; } 
+            return b.Value;
+        }
 
         private void SetNullOnElements()
         {
@@ -106,12 +110,14 @@ namespace TelegramBotClean.Data
             {
                 con.Open();
                 command = con.CreateCommand();
-                command.CommandText = sql;
-                int count = command.ExecuteNonQuery();         
+                command.CommandText = sql ;
+                bool executed = command.ExecuteNonQuery() > 0;
+               
                 con.Close();
-                SetNullOnElements();       
+                SetNullOnElements();
                 InfoStop();
-                return count > 0;
+
+                return executed;
             }
             catch (Exception e)
             {
@@ -168,16 +174,16 @@ namespace TelegramBotClean.Data
                 return new DataTable();
             }
         }
-        
+
 
 
 
 
         protected DataTable Select(string[] columns, string table, string where = "")
         {
-            string columnsStr = string.Join(", ",columns);
+            string columnsStr = string.Join(", ", columns);
             string WhereString = where == "" ? "" : "WHERE " + where;
-            string sqlCommandString = string.Join(" ", new string[] { "Select", columnsStr,"FROM", table, WhereString, ";" });
+            string sqlCommandString = string.Join(" ", new string[] { "Select", columnsStr, "FROM", table, WhereString, ";" });
             return Select(sqlCommandString);
         }
         protected DataTable Select(string column, string table, string where = "")
@@ -199,7 +205,7 @@ namespace TelegramBotClean.Data
             string sqlCommandString = string.Join(" ", new string[] { "Select * FROM", table, WhereString, ";" });
             return sqlCommandString;
         }
-        public string SelecteStringOneColumn(string column,string table, string where = "")
+        public string SelecteStringOneColumn(string column, string table, string where = "")
         {
             string WhereString = where == "" ? "" : "WHERE " + where;
             string sqlCommandString = string.Join(" ", new string[] { "Select column FROM", table, WhereString, ";" });
@@ -207,7 +213,7 @@ namespace TelegramBotClean.Data
         }
         protected string[] ColumnOnTableAsStringArray(string table, string column, string where = "")
         {
-            DataTable t = Select(column,table, where);
+            DataTable t = Select(column, table, where);
             if (t.Rows.Count == 0) return new string[0];
             else
             {
@@ -216,11 +222,45 @@ namespace TelegramBotClean.Data
         }
         protected string SelectFirstString(string table, string column, string where = "")
         {
-            DataTable t = SelectAllIn(table,where);
+            DataTable t = SelectAllIn(table, where);
             if (t.Rows.Count == 0) return "";
             else return t.Rows[0][column].ToString();
         }
-        
+        protected long SelectFirstLong(string table, string column, string where = "")
+        {
+            DataTable t = SelectAllIn(table, where);
+            if (t.Rows.Count == 0) return -1;
+            else
+            {
+                string i = t.Rows[0][column].ToString();
+                try { return Convert.ToInt64(i); }
+                catch (Exception ex)
+                {
+                    Logger.Error("SelectFirstLong получил не число!!!"+Environment.NewLine
+                                +ex.Message);
+                    return -1;
+                }
+            }
+        }
+        protected long SelectFirstLong(string sqlQuery,bool allIn = true)
+        {
+            DataTable t = null;
+            if (allIn) t = SelectAllIn(sqlQuery);
+            else t = Select(sqlQuery);
+            if (t.Rows.Count == 0) return -1;
+            else
+            {
+                string i = t.Rows[0][0].ToString();
+                try { return Convert.ToInt64(i); }
+                catch (Exception ex)
+                {
+                    Logger.Error("SelectFirstLong получил не число!!!" + Environment.NewLine
+                                + ex.Message);
+                    return -1;
+                }
+            }
+        }
+
         protected string SelectOneString(string sql)
         {
             DataTable t = Select(sql);
@@ -289,33 +329,33 @@ namespace TelegramBotClean.Data
             else return 0;
         }
 
-        protected bool InsertInto(string table, string[] columns, object[] values)
+        protected long InsertInto(string table, string[] columns, object[] values,bool returnIndex=false)
         {
             if (columns.Length != values.Length)
             {
                 Error("Получено разное количество столбцов и значений", "InsertInto");
-                return false;
+                return -1;
             }
             else
             {
                 List<string> valuesValid = new List<string>();
                 DataTable tableInfo = GetInfoTable(table);
-                if (tableInfo.Rows.Count !=0)
+                if (tableInfo.Rows.Count != 0)
                 {
                     //сравнение типов данных
                     for (int i = 0; i < columns.Length; i++)
                     {
+                        
                         // проверка, есть ли вообще такая колонка
                         EnumerableRowCollection<DataRow> InfoColumn = tableInfo.AsEnumerable()
                         .Where(el => el["COLUMN_NAME"].ToString().ToLower() == columns[i].ToLower());
                         if (InfoColumn.Count() == 0)
                         {
                             Error($"Колонка {columns[i]} не найдена", "InsertInto");
-                            return false;
+                            return -1;
                         }
                         // проверка соответствия типа
-                        string aaa = values[i].GetType().ToString().ToLower();
-                        string typecol = aaa switch
+                        string typecol = values[i].GetType().ToString().ToLower() switch
                         {
                             "system.string" => "nvarchar",
                             "system.int32" => "bigint",
@@ -329,30 +369,34 @@ namespace TelegramBotClean.Data
                         if (realColType != typecol)
                         {
                             Error($"Введенное значение {values[i]} не соответствует типу колонки {infoColumn["COLUMN_NAME"]}", "InsertInto");
-                            return false;
+                            return -1;
                         }
                         string validValue = realColType switch
                         {
-                            "nvarchar" => $"N'{values[i]}'",
-                            "bigint" => $"{values[i]}",
-                            "datetime" => $"'{Convert.ToDateTime(values[i]).ToString("yyyy-MM-dd HH:mm")}'",
-                            "bit" => $"{values[i]}",
-                            _ => "nvarchar"
+                            "nvarchar" => $"N'{values[i] ?? "-"}'",
+                            "bigint" => $"{values[i] ?? "0"}",
+                            "datetime" => $"'{Convert.ToDateTime(values[i] ?? DateTime.Now.ToString()).ToString("yyyy-MM-dd HH:mm")}'",
+                            "bit" => $"{values[i] ?? "0"}",
+                            _ => "NULL"
                         };
                         valuesValid.Add(validValue);
                     }
                     string sqlQuery = $"Insert Into {table}({string.Join(",", columns)}) values({string.Join(",", valuesValid)})";
-
-                    return Execute(sqlQuery);
+                    long idNewRow = 0;
+                    if (Execute(sqlQuery))
+                    {
+                        idNewRow = SelectFirstLong($"SELECT IDENT_CURRENT('{table}')",false);
+                    }
+                    return idNewRow;
 
                 }
                 else
                 {
                     Error($"Таблица ({table}) не найдена", "InsertInto");
-                    return false;
+                    return -1;
                 }
-               
-                return false;
+
+                return -1;
             }
         }
 
@@ -379,7 +423,7 @@ namespace TelegramBotClean.Data
             return;
         }
 
-       
+
         /// <summary>
         /// Получает список всех таблиц в базе данных
         /// </summary>
@@ -426,20 +470,20 @@ namespace TelegramBotClean.Data
     public class BotDB : MSSQLDBWorker
     {
         Random r;
-        
+
         public BotDB(Random r) : base(Config.PathToDBBot) { this.r = r; }
-        
+
         //Users
         public DataTable GetAllUsers()
         {
             DataTable dbTable = SelectAllIn("users");
-            
+
             return dbTable;
-            
+
         }
         public User GetUser(long id)
         {
-            DataTable t = SelectAllIn("users","id = "+id);
+            DataTable t = SelectAllIn("users", "id = " + id);
             if (t.Rows.Count == 1)
             {
                 DataRow r = t.Rows[0];
@@ -449,7 +493,7 @@ namespace TelegramBotClean.Data
             {
                 return null;
             }
-          
+
         }
         public bool CreateUser(User user)
         {
@@ -473,13 +517,13 @@ namespace TelegramBotClean.Data
             }
             return retValue;
         }
-     
+
         //Commands
         public long GetIdCommandByName(Command c)
         {
             DataTable t = Select("id", "Commands", $"textCommand ='{c.Name}'");
             if (t.Rows.Count == 0) return -1L;
-            else 
+            else
             {
                 try
                 {
@@ -528,8 +572,8 @@ namespace TelegramBotClean.Data
             {
                 string nameCommand = t.Rows[i]["name"].ToString();
                 string textAnswer = t.Rows[i]["word"].ToString();
-                
-                if (retValues.Where(el=>el.Key == nameCommand).Count() !=0)
+
+                if (retValues.Where(el => el.Key == nameCommand).Count() != 0)
                 {
                     retValues[nameCommand].Add(textAnswer);
                 }
@@ -540,31 +584,31 @@ namespace TelegramBotClean.Data
             }
             return retValues;
         }
-      
+
         public string GetRandomAnswer(Command command)
         {
             long idcommandInBase = GetIdCommandByName(command);
             if (idcommandInBase == -1) return "CommandNotFound";
-            string[] answers = ColumnOnTableAsStringArray("Ansvere_word", "word","idCommand="+idcommandInBase);
+            string[] answers = ColumnOnTableAsStringArray("Ansvere_word", "word", "idCommand=" + idcommandInBase);
             return answers[r.Next(0, answers.Length)];
         }
         public string GetRandomAnswer(string command)
         {
-            long idcommandInBase = GetIdCommandByName("/"+command);
+            long idcommandInBase = GetIdCommandByName("/" + command);
             if (idcommandInBase == -1) return "CommandNotFound";
             string[] answers = ColumnOnTableAsStringArray("Ansvere_word", "word", "idCommand=" + idcommandInBase);
             return answers[r.Next(0, answers.Length)];
         }
         //public string[] GetRandomAnswers(string c1, string c2="", string c3="", string c4="", string c5="")
         //{
-            
+
         //    List<string> retCommands = new List<string>();
         //    List<string> commandsLs = new List<string>() { "word = '"+c1+"'" };
         //    if (c2 != "") commandsLs.Add("word =  '" + c2 + "'");
         //    if (c3 != "") commandsLs.Add("word =  '" + c3 + "'");
         //    if (c4 != "") commandsLs.Add("word =  '" + c4 + "'");
         //    if (c5 != "") commandsLs.Add("word =  '" + c5 + "'");
-                       
+
         //    string idcommandInBase = GetIdCommandByName("/" + command);
 
         //    string[] answers = ColumnOnTableAsStringArray("Ansvere_word", "word", "idCommand=" + idcommandInBase);
@@ -575,50 +619,135 @@ namespace TelegramBotClean.Data
         //MemMessages
         public DataTable GetAllMemMessages()
         {
-           return SelectAllIn("MemMessages");
+            return SelectAllIn("MemMessages");
         }
-        public bool CreateMemMessage(Mem mem)
+        public long CreateMemMessage(Mem mem)
         {
-            return InsertInto("MemMessages", new string[]{"fileId","idMessage","idChat"},new object[] {mem.Message.ImageId,mem.Message.Id,mem.Message.ChatId});
-        }
-        public bool CreateAnonMessage(MessageI mes,string anonName)
-        {
-            return InsertInto("Anonim_messages", 
-                new string[] {"text"   , "idTeen",     "idAnswer_message", "dateTime",   "desiredTeacher", "idMessage", "anonName"},
-                new object[] { mes.Text, mes.SenderId, 0,                  DateTime.Now, 0,                mes.Id,      anonName});
+            return InsertInto("MemMessages", new string[] { "fileId", "idMessage", "idChat" }, new object[] { mem.Message.FileId, mem.Message.Id, mem.Message.ChatId });
         }
         
+        
+
 
         //AnonimNames
-        public string[] GetAllAnonimNames() 
+        public string[] GetAllAnonimNames()
         {
             return SelectAllIn("AnonimUserName")
                 .AsEnumerable()
                 .Select(el => el[1].ToString())
                 .ToArray();
         }
+        public long CreateAnonName()
+        {
+            return InsertInto("AnonimUserName",new string[] { "name" }, 
+                new object[] { "Проверка"},true);
+        }
         //AnonimMessages
-        public DataTable GetAllAnonMessageWithTeacherName()
+        public DataTable GetAllAnon()
         {
-            DataTable t = Select("Select " +
-                "text," +
-                "idTeen," +
-                "idAnswer_message," +
-                "desiredTeacher," +
-                "idMessage," +
-                "anonName " +
-                "FROM Anonim_messages " +
-                "WHERE idAnswer_message = 0" 
-               );
-            return t;
+            return SelectAllIn("AnonMessage,Messages", "AnonMessage.idMessage = Messages.id");
+        }
+        public long CreateAnonMessage(MessageI mes, string anonName, User teen, User WentTeacher = null)
+        {
+            string fId = mes.FileId ?? "-";
+            string text = mes.Text ?? "-";
+            string type = mes.Type.Name ?? "-";
+            
+            long idNewMessage = CreateMessage(mes);
+            if (idNewMessage == -1)
+            {
+                return -1;
+            }
+            else
+            {
+                return InsertInto("");   
+            }
+            return 0;
+        }
+        //Messages
+        public long CreateMessage(MessageI mes)
+        {
+            return InsertInto("Messages", new string[] { "fileId", "text", "type" }, new object[] { mes.FileId, mes.Text, mes.Type.Name });
         }
 
-        public bool ExecuteValid()
+
+        //GoldVerses
+        public DataTable GetGoldVerses()
         {
-            return InsertInto("MemMessages",new string[] { "fileId","idMessage"},new object[]{"text",159});
+            return SelectAllIn("Golds");
         }
 
+
+       
 
     }
-  
+    public class BibleDB : MSSQLDBWorker
+    {
+        Random r;
+
+        public BibleDB(Random r) : base(Config.PathToDBBible) { this.r = r; }
+        public string[] BooksName()
+        {
+            return SelectAllIn("Books")
+                .AsEnumerable()
+                .Select(el => el["name_book"].ToString())
+                .ToArray();
+        }
+        public string[] ShortBooksName()
+        {
+            return SelectAllIn("Books")
+               .AsEnumerable()
+               .Select(el => el["short_name"].ToString())
+               .ToArray();
+        }
+        public Books GetBooks()
+        {
+            DataTable t = SelectAllIn("Books");
+            List<Book> booksList = t.AsEnumerable()
+                .Select(el =>
+                new Book(
+                    el["name_book"].ToString(),
+                    el["short_name"].ToString(),
+                    Convert.ToInt64(el["id"].ToString()),
+                    0)                    
+                ).ToList();
+            return new Books(booksList);
+
+        }
+        public Chapters GetChapters()
+        {
+            DataTable t = SelectAllIn("Chapters");
+            List<Chapter> chapters = t.AsEnumerable()
+                .Select(el =>
+                new Chapter(
+                    Convert.ToInt64(el["id"].ToString()),
+                    Convert.ToInt64(el["book_id"].ToString()),
+                    Convert.ToInt64(el["number_chapter"].ToString()),
+                    Convert.ToInt64(el["count_verses"].ToString())
+                    )
+                ).ToList() ;
+            return new Chapters(chapters);
+        }
+        public Verses GetVerses(Books books,Chapters chapters)
+        {
+            DataTable t = SelectAllIn("Verses");
+            List<Verse> verses = t.AsEnumerable()
+                .Select(el =>
+                new Verse(
+                     Convert.ToInt64(el["verse_number"].ToString()),
+                     Convert.ToInt64(el["chapter_id"].ToString()),
+                     Convert.ToInt64(el["id"].ToString()),
+                     el["text_verse"].ToString(),
+                     books,
+                     chapters
+                    )
+                ).ToList();
+            return new Verses(verses);
+        }
+        public int GetVerse(AddressVerse address)
+        {
+            return 0;
+        }
+
+    }
 }

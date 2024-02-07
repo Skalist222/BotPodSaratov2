@@ -1,7 +1,9 @@
 ﻿using System.Data;
+using System.Timers;
 using TelegramBotClean.Bot;
 using TelegramBotClean.Data;
 using TelegramBotClean.Messages;
+using TelegramBotClean.Userses;
 
 namespace TelegramBotClean.MessagesDir
 {
@@ -19,6 +21,8 @@ namespace TelegramBotClean.MessagesDir
         public string Text { get { return text; } }
         public string UniqName { get { return uniqName; } }
         public string TeacherName { get { return desiredTeacher; } }
+        public long IdTeen { get { return idTeen; } }
+        public void SetTrueAnswered() { answered = true; }
         public AnonimMessage(string text, string uniqName, long idTeen, string desiredTeacher, int idMessage,long idTeacher)
         {
             this.text = text;
@@ -29,21 +33,21 @@ namespace TelegramBotClean.MessagesDir
             this.idDesiredteacher = idTeacher;
         }
     }
-    public class UnansweredAnonimMessage: AnonimMessage
+    public class UnansveredAnonimMessage: AnonimMessage
     {
-        public UnansweredAnonimMessage(string text, string uniqName, long idTeen,  int idMessage, long idTeacher=0,string desiredTeacher="") :base(text,uniqName, idTeen, desiredTeacher, idMessage, idTeacher) { }
+        public UnansveredAnonimMessage(string text, string uniqName, long idTeen,  int idMessage, long idTeacher=0,string desiredTeacher="") :base(text,uniqName, idTeen, desiredTeacher, idMessage, idTeacher) { }
 
         public void SetAnswere(Sender sender, MessageI message)
         {
             
         }
     }
-    public class UnansweredsMeesages: List<UnansweredAnonimMessage>
+    public class UnansveredsMeesages: List<UnansveredAnonimMessage>
     {
-        public bool Empty { get { return this.Count ==0; } }
-        public UnansweredsMeesages(BotDB botBase) : base()
+        public bool IsEmpty { get { return this.Count == 0; } }
+        public UnansveredsMeesages(BotDB botBase) : base()
         {
-            DataTable t = botBase.GetAllAnonMessageWithTeacherName();
+            DataTable t = botBase.GetAllAnon();
             Dictionary<long, string> names = botBase.GetUniqNamesWithId();
             for (int i = 0; i < t.Rows.Count; i++)
             {
@@ -51,7 +55,7 @@ namespace TelegramBotClean.MessagesDir
                 long idDesTeach = Convert.ToInt64(r["desiredTeacher"].ToString());
                 if (idDesTeach == 0)
                 {
-                    Add(new UnansweredAnonimMessage(
+                    Add(new UnansveredAnonimMessage(
                         r["text"].ToString(),
                         r["anonName"].ToString(),
                         Convert.ToInt64(r["idTeen"].ToString()),
@@ -61,7 +65,7 @@ namespace TelegramBotClean.MessagesDir
                 else
                 {
                     string desTeachName = names[idDesTeach];
-                    Add(new UnansweredAnonimMessage(
+                    Add(new UnansveredAnonimMessage(
                         r["text"].ToString(),
                         r["anonName"].ToString(),
                         Convert.ToInt64(r["idTeen"].ToString()),
@@ -73,7 +77,7 @@ namespace TelegramBotClean.MessagesDir
             }
         }
   
-        public UnansweredsMeesages(UnansweredAnonimMessage mes1, UnansweredAnonimMessage mes2= null, UnansweredAnonimMessage mes3 = null, UnansweredAnonimMessage mes4 = null, UnansweredAnonimMessage mes5 = null) : base()
+        public UnansveredsMeesages(UnansveredAnonimMessage mes1, UnansveredAnonimMessage mes2= null, UnansveredAnonimMessage mes3 = null, UnansveredAnonimMessage mes4 = null, UnansveredAnonimMessage mes5 = null) : base()
         {
             this.Add(mes1);
             if (mes2 is not null) this.Add(mes2);
@@ -81,7 +85,7 @@ namespace TelegramBotClean.MessagesDir
             if (mes4 is not null) this.Add(mes4);
             if (mes5 is not null) this.Add(mes5);
         }
-        public UnansweredsMeesages(List<UnansweredAnonimMessage> array):base()
+        public UnansveredsMeesages(List<UnansveredAnonimMessage> array):base()
         {
             for (int i = 0; i < array.Count; i++)
             {
@@ -98,16 +102,74 @@ namespace TelegramBotClean.MessagesDir
         /// UnansweredsMeesages - сообщения от него
         /// </returns>
         /// 
-        public Dictionary<string, UnansweredsMeesages> GetGroupsMessages()
+        public GroupsUbabsvereMessage GetGroupsMessages()
         {
-            return this.GroupBy(el => el.UniqName)
-                .ToDictionary(
-                g => g.Key, 
-                g => new UnansweredsMeesages(g.ToList()
-                ));
-                
+            int count = this.Count;
+            GroupsUbabsvereMessage groups = new GroupsUbabsvereMessage();
+            for (int i = 0; i < count; i++)
+            {
+                string uniqName = this[i].UniqName;
+                if (!this[i].Answered)
+                {
+                    if (groups.Have(uniqName))
+                    {
+                        groups[uniqName].Messages.Add(this[i]);
+                    }
+                    else
+                    {
+                        //groups.Add(new GroupUnansvereMessage(this[i].IdTeen, uniqName, new UnansveredsMeesages(this[i])));
+                    }
+                }
+            }
+            return groups;
+        }
+        public void SetAnswered(long idTeen)
+        {
+            List<UnansveredAnonimMessage> mess = this.Where(el => el.IdTeen == idTeen).ToList();
+            if (mess.Count != 0)
+                for (int i = 0; i < mess.Count; i++)
+                {
+                    mess[0].SetTrueAnswered();
+                }
+
         }
         
     }
 
+    public class GroupUnansvereMessage 
+    {
+        public User User { get; }
+        public long IdAnonUser { get; }
+        public string UniqUserName { get; }
+        public UnansveredsMeesages Messages { get; }
+
+        public GroupUnansvereMessage(User user, string uniqUserName, UnansveredsMeesages messages)
+        {
+            this.User = user;
+            this.UniqUserName = uniqUserName;
+            this.Messages = messages;
+        }
+    }
+    public class GroupsUbabsvereMessage : List<GroupUnansvereMessage>
+    {
+        public GroupsUbabsvereMessage():base()
+        { 
+            
+        }
+        public bool Have(string uniqName)
+        {
+            return this.Where(el => el.UniqUserName == uniqName).Count() != 0;
+        }
+        public GroupUnansvereMessage this[string uniqName]
+        {
+            get 
+            {
+                List<GroupUnansvereMessage> valids = this.
+                    Where(el => el.UniqUserName == uniqName).
+                    ToList();
+                if (valids.Count == 1) return valids[0];
+                else return null;
+            }
+        }
+    }
 }

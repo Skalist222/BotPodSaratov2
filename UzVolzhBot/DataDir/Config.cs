@@ -5,6 +5,7 @@ namespace TelegramBotClean.Data
     {
         public static string Token { get { return File.ReadAllLines(Path.Combine(Directory.GetCurrentDirectory(), "Data", "Secret.txt")).FirstOrDefault("No"); } }
         public static string PathToDBBot{ get { return Path.Combine(Directory.GetCurrentDirectory(), "Data", "BotInformation.mdf"); } }
+        public static string PathToDBBible { get { return Path.Combine(Directory.GetCurrentDirectory(), "Data", "Bible.mdf"); } }
         public static BotInformation Info { get { return new BotInformation(); } }
         public static bool ValidationConfig()
         {

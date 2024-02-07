@@ -23,9 +23,9 @@ namespace TelegramBotClean.TextDir
             UpdateAnonimNames();
         }
         /// <summary>
-        /// Environment.NewLine
+        /// Эквивалентно Environment.NewLine
         /// </summary>
-        protected static string Ln { get { return Environment.NewLine; } }
+        public static string Ln { get { return Environment.NewLine; } }
 
         protected void UpdateAnswers()
         {
@@ -39,14 +39,14 @@ namespace TelegramBotClean.TextDir
 
 
 
-        public string RandomAnswere(string command)
+        public string RandomAnswere(string text)
         {
-            string[] words = answers["/"+command].ToArray();
+            Commands c = Commands.SelectCommands(text);
+            string[] words = answers[c.AsCommand().Name].ToArray();
             return words[r.Next(0, words.Length)];
         }
         public string RandomAnswere(Command command)
         {
-          
             string[] words = answers[command.Name].ToArray();
             return words[r.Next(0, words.Length)];
         }
@@ -73,8 +73,22 @@ namespace TelegramBotClean.TextDir
         }
         public static string Help(User user) 
         {
-            string retInformation = BotInformation.version;
-            retInformation += "Не понимаешь как работают кнопки? Нажми: /howWorkButton"+ Ln;
+            string retInformation = BotInformation.version + Ln;
+            retInformation += "Узнать как работают кнопки нажми: /howWorkButton"+ Ln;
+            retInformation += "";
+            return retInformation;
+        }
+        public static string HowWorkButton(User user)
+        {
+
+            string retInformation = "";
+            retInformation += "Кнопка (Помощь): при нажатии на кнопку срабатывает окошко с помощью" + Ln;
+            if (user.TypeUser == UserTypes.Teen)
+            {
+                retInformation += "Кнопка (Включить Анон): При нажатии, включается режим анонимности, и отключаются все возможности бота. Все сообщения, которые  ты отправишь, будут анонимно направлены учителям. Они смогут тебе ответить на любые вопросы.";
+                retInformation += "Кнопка (Отключить Анон): Появляется после включения анона. После нажатия, включаются все функции бота и отключается режим анонимности.";
+            }
+            
             return retInformation;
         }
     }

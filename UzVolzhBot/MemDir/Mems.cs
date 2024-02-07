@@ -26,7 +26,7 @@ namespace TelegramBotClean.MemDir
         }
         public bool Add(Mem mem)
         {
-            if (botBase.CreateMemMessage(mem))
+            if (botBase.CreateMemMessage(mem) != -1)
             {
                 base.Add(mem);
                 return true;
@@ -41,7 +41,7 @@ namespace TelegramBotClean.MemDir
         {
             try
             {
-                base.Add(new Mem(new MessageI("", fileId, idMessage, idChat)));
+                //base.Add(new Mem(new MessageI("", fileId, idMessage, idChat)));
             }
             catch
             {
@@ -53,9 +53,9 @@ namespace TelegramBotClean.MemDir
         {
             int randomIndexMem = r.Next(0, this.Count);
             MessageI m = this[randomIndexMem].Message;
-            string idMessage = m.ImageId;
+            string idMessage = m.FileId;
             Telegram.Bot.Types.File fileInfo = null;
-            fileInfo = botClient.GetFileAsync(m.ImageId).Result;
+            fileInfo = botClient.GetFileAsync(m.FileId).Result;
             string filePath = fileInfo.FilePath;
             string newNameFile = Directory.GetCurrentDirectory() + "\\" + fileInfo.FileUniqueId[0..15] + " " + Path.GetFileName(filePath);
             Bitmap bm;
@@ -78,10 +78,11 @@ namespace TelegramBotClean.MemDir
         {
             string textMessage = botBase.GetRandomAnswer("catch") + " "+ botBase.GetRandomAnswer("mem") + ")";
             Bitmap bm = GetRandomMemImage(r);
-            return new MessageI(textMessage,bm);
+            return new MessageI(textMessage);
         }
-        public MessageI GetMessageRandomMem2(Random r)
+        public MessageI? GetMessageRandomMem2(Random r)
         {
+            if (this.Count == 0) return null;
             int randomIndexMem = r.Next(0, this.Count);
             MessageI m = this[randomIndexMem].Message;
             return m;

@@ -81,8 +81,6 @@ namespace TelegramBotClean.Userses
         protected MessageI lastMessage;
         
 
-     
-
         public long Id { get { return id; } }
         public string NickName { get { return nickName; } }
         public string FirstName { get { return firstName; } }
@@ -158,6 +156,13 @@ namespace TelegramBotClean.Userses
         public string ToString()
         {
             return $"({type.Name}:{Id}) {Name}";
+        }
+        public string SideMenu()
+        {
+
+            if (type == UserTypes.Teen && teenInfo.InAnonim) return "anon";
+            if (type == UserTypes.Teacher && teacherInfo.InAnswerAnon) return "answerAnon";
+            return "no";
         }
     }
 
