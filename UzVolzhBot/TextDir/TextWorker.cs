@@ -41,14 +41,32 @@ namespace TelegramBotClean.TextDir
 
         public string RandomAnswere(string text)
         {
-            Commands c = Commands.SelectCommands(text);
-            string[] words = answers[c.AsCommand().Name].ToArray();
+            Command c = Commands.Get(text);
+            string[] words = answers[c.Name].ToArray();
             return words[r.Next(0, words.Length)];
         }
-        public string RandomAnswere(Command command)
+        public string RandomAnswere(string t1, string t2="", string t3="", string t4="", string t5="", string t6="", string t7="")
         {
-            string[] words = answers[command.Name].ToArray();
-            return words[r.Next(0, words.Length)];
+            List<string> commands = new List<string>() {t1};
+            if (t2 != "") commands.Add(t2);
+            if (t3 != "") commands.Add(t3);
+            if (t4 != "") commands.Add(t4);
+            if (t5 != "") commands.Add(t5);
+            if (t6 != "") commands.Add(t6);
+            if (t7 != "") commands.Add(t7);
+            return RandomAnswere(commands.ToArray());
+        }
+        public string RandomAnswere(string[] commands)
+        {
+            string textReturn = "";
+            for (int i = 0; i < commands.Length; i++)
+            {
+                string text = commands[i];
+
+                textReturn += RandomAnswere(text)+" ";
+            }
+            return textReturn;
+
         }
 
         public string RandomAnonName()

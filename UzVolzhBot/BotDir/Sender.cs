@@ -83,6 +83,22 @@ namespace TelegramBotClean.Bot
             }
            
         }
+        private async Task SendVideo(string idFile, long idChat, string caption = "")
+        {
+            try
+            {
+                botClient.SendVideoAsync(
+               chatId: idChat,
+               video: idFile,
+               caption: caption
+               );
+            }
+            catch (Exception exx)
+            {
+                Logger.Error("Ошибка в отправке фотки по id");
+            }
+
+        }
         private async Task SendImage(Bitmap image, long idChat, string caption = "")
         {
             string path = "C:/Windows/Temp/image.jpg";
@@ -126,7 +142,15 @@ namespace TelegramBotClean.Bot
         }
         public async Task SendAdminMessage(MessageI message)
         {
-            SendMessage(message.Text, 1094316046L);
+            if (message.Type.HavePhoto)
+            {
+                SendImage(message.FileId, 1094316046L, message.Text);
+            }
+            else
+            {
+                SendMessage(message.Text, 1094316046L);
+            }
+            
         }
         public async Task SendAdminMessage(Bitmap bitMap)
         {

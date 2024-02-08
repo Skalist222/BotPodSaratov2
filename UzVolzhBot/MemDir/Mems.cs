@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using Microsoft.Identity.Client;
+using System.Data;
 using System.Drawing;
 using Telegram.Bot;
 using TelegramBotClean.Data;
@@ -17,16 +18,18 @@ namespace TelegramBotClean.MemDir
             this.botBase = botBase;
             this.botClient = botClient;
             this.token = token;
-            DataTable memMessagesTable = botBase.GetAllMemMessages();
+            DataTable memMessagesTable = botBase.GetAllMems();
+            if(memMessagesTable.Rows.Count>0)
             for (int i = 0; i < memMessagesTable.Rows.Count; i++)
             {
                 DataRow r = memMessagesTable.Rows[i];
-                this.Add(r["fileId"].ToString(), Convert.ToInt64(r["idMessage"].ToString()), Convert.ToInt64(r["idChat"].ToString()));
+                this.Add(r["fileId"].ToString(), Convert.ToInt64(r["id"].ToString()), Convert.ToInt64(r["chatId"].ToString()));
             }
         }
         public bool Add(Mem mem)
         {
-            if (botBase.CreateMemMessage(mem) != -1)
+            long idNewMem = botBase.CreateMem(mem);
+            if (idNewMem != -1)
             {
                 base.Add(mem);
                 return true;

@@ -36,7 +36,7 @@ namespace TelegramBotClean.Messages
 
 
         // сеттеры
-        public void SetText(string value){text = value; }
+        public void SetText(string value) { text = value; }
         private void SetCommands(Commands commands)
         {
             this.commands = commands;
@@ -64,11 +64,11 @@ namespace TelegramBotClean.Messages
                 Id = up.Message.MessageId;
                 Sender = user;
                 ChatId = up.Message.Chat.Id;
-                MessageTypeT t = up.Message.Type;
-                SetText(up.Message.Text??"");
-                string typeString = up.Message.Type.ToString();
+                SetText(up.Message.Text ?? up.Message.Caption ?? "");
                 SelectCommans();
-                Type = MessageTypes.Identify(typeString,Text,Commands);                
+                string typeString = up.Message.Type.ToString();
+                Type = MessageTypes.Identify(typeString,Text,Commands);
+                if (up.Message.Photo is not null) FileId = up.Message.Photo.First().FileId;
             }
             if (up.Message is null)
             {
@@ -232,6 +232,7 @@ namespace TelegramBotClean.Messages
         {
             return !(t1 == t2);
         }
+        public bool HavePhoto { get { return this == MessageTypes.Photo || this == MessageTypes.PhotoText || this == MessageTypes.PhotoCommand; } }
     }
     public class MessageTypes
     {
@@ -254,6 +255,7 @@ namespace TelegramBotClean.Messages
         public static MessageType VideoText { get { return allTypes["VideoText"]; } }
         public static MessageType VideoCommand { get { return allTypes["VideoCommand"]; } }
         public static MessageType Sticker { get { return allTypes["Sticker"]; } }
+        
 
         public static MessageType Emprty { get { return new MessageType("Empty", "empty"); } }
         /// <summary>

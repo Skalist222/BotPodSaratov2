@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Timers;
+using Telegram.Bot.Types;
 using TelegramBotClean.Bible;
 using TelegramBotClean.Commandses;
 using TelegramBotClean.MemDir;
@@ -355,23 +356,45 @@ namespace TelegramBotClean.Data
                             return -1;
                         }
                         // проверка соответствия типа
-                        string typecol = values[i].GetType().ToString().ToLower() switch
-                        {
-                            "system.string" => "nvarchar",
-                            "system.int32" => "bigint",
-                            "system.int64" => "bigint",
-                            "system.datetime" => "datetime",
-                            "system.bool" => "bit",
-                            _ => "nvarchar"
-                        };
                         DataRow infoColumn = InfoColumn.First();
-                        string realColType = infoColumn["DATA_TYPE"].ToString();
-                        if (realColType != typecol)
+                        string realColumnType = infoColumn["DATA_TYPE"].ToString();
+
+                        string typecol = "";
+                        // если получили нул
+                        if (values[i] is null)
+                        {
+                            values[i] = realColumnType switch
+                            {
+
+                                "nvarchar" => "-",
+                                "bigint" => 0,
+                                "datetime" => DateTime.Now,
+                                "bit" => false,
+                                _ => "NULL"
+                            };
+                            typecol = realColumnType;
+                        }
+                        else
+                        {
+                            typecol = values[i].GetType().ToString().ToLower() switch
+                            {
+
+                                "system.string" => "nvarchar",
+                                "system.int32" => "bigint",
+                                "system.int64" => "bigint",
+                                "system.datetime" => "datetime",
+                                "system.bool" => "bit",
+                                _ => "nvarchar"
+                            };
+                        }
+                         
+                       
+                        if (realColumnType != typecol)
                         {
                             Error($"Введенное значение {values[i]} не соответствует типу колонки {infoColumn["COLUMN_NAME"]}", "InsertInto");
                             return -1;
                         }
-                        string validValue = realColType switch
+                        string validValue = realColumnType switch
                         {
                             "nvarchar" => $"N'{values[i] ?? "-"}'",
                             "bigint" => $"{values[i] ?? "0"}",
@@ -617,14 +640,15 @@ namespace TelegramBotClean.Data
 
 
         //MemMessages
-        public DataTable GetAllMemMessages()
+        public DataTable GetAllMems()
         {
-            return SelectAllIn("MemMessages");
+            return SelectAllIn("Messages", "command='" + Commands.Get("+ мем").Name + "'");
         }
-        public long CreateMemMessage(Mem mem)
+        public long CreateMem(Mem mem)
         {
-            return InsertInto("MemMessages", new string[] { "fileId", "idMessage", "idChat" }, new object[] { mem.Message.FileId, mem.Message.Id, mem.Message.ChatId });
+            return CreateMessage(mem.Message);
         }
+
         
         
 
@@ -645,29 +669,35 @@ namespace TelegramBotClean.Data
         //AnonimMessages
         public DataTable GetAllAnon()
         {
-            return SelectAllIn("AnonMessage,Messages", "AnonMessage.idMessage = Messages.id");
+            return SelectAllIn("AnonMessages,Messages", "AnonMessage.idMessage = Messages.id");
         }
         public long CreateAnonMessage(MessageI mes, string anonName, User teen, User WentTeacher = null)
         {
-            string fId = mes.FileId ?? "-";
-            string text = mes.Text ?? "-";
-            string type = mes.Type.Name ?? "-";
-            
-            long idNewMessage = CreateMessage(mes);
-            if (idNewMessage == -1)
-            {
-                return -1;
-            }
-            else
-            {
-                return InsertInto("");   
-            }
-            return 0;
+            long mesId = CreateMessage(mes,Commands.SelectCommands("anon"));
+            if (mesId == -1) return -1;
+            long idWent = WentTeacher is not null ? WentTeacher.Id : 0;
+            return InsertInto("AnonMessages",
+                new string[] {"idTeen","idWentTeacher","idAnswerTeacher","idMessage"},
+                new object[] {teen.Id,}
+                ); ;
+            // потом сделаю
         }
         //Messages
-        public long CreateMessage(MessageI mes)
+        public long CreateMessage(MessageI mes,Commands commands = null)
         {
-            return InsertInto("Messages", new string[] { "fileId", "text", "type" }, new object[] { mes.FileId, mes.Text, mes.Type.Name });
+            string commandtext = commands is not null ? commands.ToString() : mes.Commands.ToString();
+            return InsertInto(
+                "Messages",
+                new string[] { "chatId", "fileId", "text", "type", "command" }, 
+                new object[] { 
+                    mes.ChatId, 
+                    mes.FileId, 
+                    mes.Text, 
+                    mes.Type.Name,
+                    commandtext });
+
+            
+
         }
 
 

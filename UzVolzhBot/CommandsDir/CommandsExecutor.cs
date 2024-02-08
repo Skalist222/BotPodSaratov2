@@ -98,7 +98,7 @@ namespace TelegramBotClean.CommandsDir
         }
         public static void ExMem(Sender sender, MessageI mes)
         {
-            sender.SendAdminMessage("Получена команда мем");
+            
             Console.WriteLine("Команда мем");
             MessageI retMes = sender.Mems.GetMessageRandomMem2(sender.Random);
             if (retMes is not null)
@@ -107,6 +107,7 @@ namespace TelegramBotClean.CommandsDir
             } 
             else  retMes = new MessageI("Простите, но в базе данных нет мемов");
             sender.SendMessage(retMes, mes.SenderId);
+            sender.SendAdminMessage("Получена команда мем");
 
         }
         public static void ExVerse(Sender sender, MessageI mes)
@@ -118,7 +119,7 @@ namespace TelegramBotClean.CommandsDir
         public static void ExGoldVerse(Sender sender, MessageI mes)
         {
             sender.SendAdminMessage("Получение случайного золотого стиха");
-            string retText = sender.TextWorker.RandomAnswere("золотой") + " " + sender.TextWorker.RandomAnswere("стих") + TextWorker.Ln +
+            string retText = sender.TextWorker.RandomAnswere("золотой","стих")+ TextWorker.Ln +
                 sender.BibleWorker.GetRandomGoldVerse().TextWithAddress;
             sender.SendMessage(retText, mes.SenderId);
         }
@@ -146,30 +147,22 @@ namespace TelegramBotClean.CommandsDir
         }
         public static void ExAddMem(Sender sender, MessageI mes)
         {
-            MessageI toSendMes = new MessageI("");
-            if (mes.Type == MessageTypes.Photo)
+            if (mes.Type == MessageTypes.PhotoCommand || mes.Type == MessageTypes.PhotoText)
             {
-                if (sender.Mems.Add(new Mem(mes)))
-                {
-                    string thenks = sender.BotBase.GetRandomAnswer(Commands.Get("спс"));
-                    string mem = sender.BotBase.GetRandomAnswer(Commands.Get("мем"));
-                    toSendMes.SetText(thenks + " " + mem);
-                }
-                else
-                {
-                    toSendMes.SetText("Ой прости.. что-то пошло не так, не смог добавить мем...");
-                }
-            }
-            else
-            {
-                toSendMes.SetText("Ну слушай... я конечно добавлю мем, ты главное мне отправь его вместе с просьбой отправить");
-            }
-            sender.SendMessage(toSendMes,mes.SenderId);
+                MessageI toSendMes = new MessageI("");
 
-            // после всех обработак отправляем админу инфу о меме
-            sender.SendAdminMessage("Получен этот мем от " + sender.Users[mes.SenderId].Name + $"({mes.SenderId}):");
-            sender.SendAdminMessage("file:" + mes.FileId + " message:" + mes.Id);
-            sender.SendAdminMessage(mes.FileId);
+                if (sender.Mems.Add(new Mem(mes))) 
+                    toSendMes.SetText(sender.TextWorker.RandomAnswere("спс", "мем"));
+                else 
+                    toSendMes.SetText("Ой прости... что-то пошло не так, не смог добавить мем...");
+                
+                // отправляем ответ пользователю
+                sender.SendMessage(toSendMes, mes.SenderId);
+
+                //отправляем админу инфу о боте
+                sender.SendAdminMessage($"Мем от ({sender.Users[mes.SenderId].Name} {mes.SenderId}):");
+                sender.SendAdminMessage(mes);
+            }
         }
 
 
@@ -196,6 +189,7 @@ namespace TelegramBotClean.CommandsDir
         public static void ExCreateAnonimMes(Sender sender, MessageI mes)
         {
             Console.WriteLine("Обработка анонимных сообщений");
+            sender.BotBase.CreateAnonMessage();
         }
 
         public static void ExecuteOnAnswereAnon(Sender sender, MessageI mes)
