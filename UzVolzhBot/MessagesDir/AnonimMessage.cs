@@ -131,7 +131,6 @@ namespace TelegramBotClean.MessagesDir
                 {
                     mess[0].SetTrueAnswered();
                 }
-
         }
         
     }

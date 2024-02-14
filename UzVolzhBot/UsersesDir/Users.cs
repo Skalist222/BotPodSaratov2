@@ -1,8 +1,11 @@
 ﻿using Microsoft.Identity.Client;
+using System;
 using System.Data;
 using Telegram.Bot.Types;
 using TelegramBotClean.Data;
+using TelegramBotClean.TextDir;
 using Logger = TelegramBotClean.Data.Logger;
+using static TelegramBotClean.TextDir.TextWorker;
 
 namespace TelegramBotClean.Userses
 {
@@ -47,6 +50,13 @@ namespace TelegramBotClean.Userses
         }
 
         public Users() : base() { }
+        public Users(List<User> userList) : base()
+        {
+            for (int i = 0; i < userList.Count; i++)
+            {
+                base.Add(userList[i]);
+            }
+        }
         public Users(DataTable dbTable):base()
         {
             for (int i = 0; i < dbTable.Rows.Count; i++)
@@ -77,7 +87,6 @@ namespace TelegramBotClean.Userses
         }
         public Users(BotDB botBase):base()
         {
-            
             DataTable t = botBase.GetAllUsers();
             for (int i = 0; i < t.Rows.Count; i++)
             {
@@ -119,6 +128,22 @@ namespace TelegramBotClean.Userses
                 }
                 catch (InvalidOperationException ex)
                 { return null; }               
+            }
+        }
+        public User? ByIndex(int index)
+        {
+            return base[index];
+        }
+        public Users Teachers { get
+            {
+                return new Users(this.Where(el => el.TypeUser == UserTypes.Teacher).ToList());
+            } 
+        }
+        public Users Teens
+        {
+            get
+            {
+                return new Users(this.Where(el => el.TypeUser == UserTypes.Teen).ToList());
             }
         }
         public void Add(User user)
@@ -165,6 +190,16 @@ namespace TelegramBotClean.Userses
                 Logger.Error("При добавке пользователя произошли ошибки");
                 return null;
             }
+        }
+
+        public string AsTextTable()
+        {
+            string retText = "";
+            for (int i = 0; i < this.Count; i++)
+            {
+                retText += (i+1)+")"+this.ByIndex(i).ToString()+Ln;
+            }
+            return retText;
         }
     }
 }

@@ -20,9 +20,11 @@ namespace TelegramBotClean.Commandses
         // Сюда писать новые команды
         private static Dictionary<string, Command> simpleCommands = new Dictionary<string, Command>
         {
+            {"/ok",new Command("/ok",new string[]{ "ok","okey","ок","оке"},ExAdmin)},
             {"/admin",new Command("/admin",new string[]{ "admin","админ"},ExAdmin)},
             {"/start",new Command("/start",new string[]{ "старт","start"},ExStart)},
             {"/add",new Command("/add",new string[]{ "добав","+","add"},ExUnknow)},
+            {"/set",new Command("/set",new string[]{ "установить","set"},ExUnknow)},
             {"/turnOn",new Command("/turnOn",new string[]{ "включ","turnOn"}, ExUnknow)},
             {"/turnOff",new Command("/turnOff",new string[]{ "выключ","отключ", "отмен", "turnoff"},ExUnknow)},
             {"/mem",new Command("/mem",new string[]{ "мем","mem" },ExMem)},
@@ -41,6 +43,13 @@ namespace TelegramBotClean.Commandses
             {"/read",new Command("/read",new string[]{ "прочитать","прочесть","читать","read"},ExUnknow)},
             {"/answere",new Command("/answere",new string[]{"ответ"},ExUnknow)},
             {"/random",new Command("/random",new string[]{"случай","рандом"},ExUnknow)},
+            {"/went",new Command("/went",new string[]{"ожида","went"},ExUnknow)},
+            {"/teacher",new Command("/teacher",new string[]{"учит","препод"},ExUnknow)},
+            {"/sayYes",new Command("/sayYes",new string[]{"да","sayyes"},ExUnknow)},
+            {"/sayNo",new Command("/sayNo",new string[]{"нет","sayno"},ExUnknow)},
+            {"/user",new Command("/user",new string[]{"пользователь","user"},ExUnknow)},
+            {"/type",new Command("/type",new string[]{"type"},ExUnknow)},
+
 
         };
         public static Dictionary<string, Command> complexCommands = new Dictionary<string, Command>
@@ -50,14 +59,21 @@ namespace TelegramBotClean.Commandses
             {"/turnOn/anon",new Command("/turnOn/anon",new string[]{"включить анон" },ExOnAnon)},
             {"/turnOff/anon",new Command("/turnOff/anon",new string[]{"отключить анон" },ExOffAnon)},
             {"/anon/read",new Command("/anon/read",new string[]{"прочесть анонимку" },ExReadAnon)},
-            {"/admin/users",new Command("/admin/users",new string[]{"Все пользователи админу" },ExAdminUsers)},
-            {"/admin/mem/all",new Command("/admin/mem/all",new string[]{"Все мемы админу" },ExAdminMems)},
+           
             {"/anon/messages/all",new Command("/anon/messages/all",new string[]{"все неотвеченые анонимки" },ExAllAnonimMessages)},
-            {"/anon/messages/answere",new Command("/anon/messages/answere",new string[]{"ответ на анонимку" },ExecuteOnAnswereAnon)},
-            {"/turnOff/answere",new Command("/turnOff/answere",new string[]{"отмена ответа на анонимку" },ExecuteOffAnswereAnon)},
+            {"/anon/messages/answere",new Command("/anon/messages/answere",new string[]{"ответ на анонимку" },ExOnAnswereAnon)},
+            {"/turnOff/answere",new Command("/turnOff/answere",new string[]{"отмена ответа на анонимку" },ExOffAnswereAnon)},
             
             {"/verse/random",new Command("/verse/random",new string[]{ "Случайный стих"},ExVerse)},
             {"/gold/verse/random",new Command("/gold/verse/random",new string[]{ "Случайный золотой стих"},ExGoldVerse)},
+
+            {"/set/went",new Command("/set/went",new string[]{ "установить желаемого учителя для ответа"},ExSetWentTeacher)},
+            {"/went/sayNo",new Command("/went/sayNo",new string[]{ "отмена установки учителя для ответа"},ExSetNoWentTeacher)},
+
+            {"/admin/all/user",new Command("/admin/all/user",new string[]{"Все пользователи админу" },ExAdminUsers)},
+            {"/admin/mem/all",new Command("/admin/mem/all",new string[]{"Все мемы админу" },ExAdminMems)},
+            {"/admin/set/type",new Command("/admin/set/type",new string[]{"установить новые привелегии пользователю" },ExAdminSenNewPrivilege)},
+        
         };
 
         //Для полноценной команды в программу нужно:
@@ -101,6 +117,7 @@ namespace TelegramBotClean.Commandses
         public static Commands AddGoldVerseCommand { get { return AddCommand + GoldVerseCommand; } }
         public static Command GoldVerseCommand { get { return complexCommands["/gold/verse"]; } }
         public static Command OffAnonCommand { get { return complexCommands["/turnOff/anon"]; } }
+        public static Command SayNoWay { get { return complexCommands["/went/sayNo"]; } }
         #endregion
 
 

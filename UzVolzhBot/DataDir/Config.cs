@@ -3,6 +3,9 @@ namespace TelegramBotClean.Data
 {
     public class Config
     {
+       
+        public static long[] AdminsId = new long[] { 1094316046L };
+        public static long FirstAdmin { get { return AdminsId[0]; } }
         public static string Token { get { return File.ReadAllLines(Path.Combine(Directory.GetCurrentDirectory(), "Data", "Secret.txt")).FirstOrDefault("No"); } }
         public static string PathToDBBot{ get { return Path.Combine(Directory.GetCurrentDirectory(), "Data", "BotInformation.mdf"); } }
         public static string PathToDBBible { get { return Path.Combine(Directory.GetCurrentDirectory(), "Data", "Bible.mdf"); } }

@@ -10,9 +10,9 @@ namespace TelegramBotClean.Bible
 {
     public class BibleWorker
     {
-        public Random Random;
-        public Books Books { get; }
-        public Chapters Chapters { get; }
+        private Random Random;
+        protected Books Books { get; }
+        protected Chapters Chapters { get; }
         public Verses Verses { get;}
         public Verses GoldVerses { get;}
         public BibleWorker(BibleDB bibleBase,BotDB botBase,Random r)

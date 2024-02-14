@@ -2,6 +2,7 @@
 using System.Data;
 using System.Net.Security;
 using TelegramBotClean.Commandses;
+using TelegramBotClean.Data;
 using TelegramBotClean.Messages;
 using TelegramBotClean.TextDir;
 using Logger = TelegramBotClean.Data.Logger;
@@ -12,15 +13,20 @@ namespace TelegramBotClean.Userses
     {
         protected bool inAnonim;
         protected string anonName;
+        protected long idWentTeacher;
+        public MessageI wentedTeacherMessage;
 
         public bool InAnonim { get { return inAnonim; } }
         public string AnonName { get { return anonName; } }
+        public long IdWentTeacher { get { return idWentTeacher; } }
+        public MessageI WentedTeacherMessage { get { return wentedTeacherMessage; } }
 
-        public void SetInAnon(TextWorker tw) {
+        public void SetInAnon(TextWorker tw,MessageI message) {
             if (!inAnonim)
             {
                 inAnonim = true;
                 anonName = tw.RandomAnonName();
+                wentedTeacherMessage = message;
             }
             else
             {
@@ -38,6 +44,16 @@ namespace TelegramBotClean.Userses
                 Logger.Error("Попытка отключить анон когда он и так отключен");
             }
         }
+        public void SetWentedTeacher(User teacher)
+        {
+            idWentTeacher = teacher.Id;
+        }
+        public void SetWentedTeacher(long idTeacher)
+        {
+            idWentTeacher = idTeacher;
+        }
+        
+
         public TeenInfo()
         {
             inAnonim = false;
@@ -128,6 +144,13 @@ namespace TelegramBotClean.Userses
         protected TeenInfo teenInfo;
         protected TeacherInfo teacherInfo;
 
+
+        public bool IsAdmin { get 
+            {
+                if (Config.AdminsId.AsEnumerable().Contains(id)) return true;
+                else return type == UserTypes.Admin;
+            }
+        }
       
         public TeenInfo TeenInfo { get { if (this is Teen) return teenInfo; else return null; } }
         public TeacherInfo TeacherInfo { get { if (this is Teacher) return teacherInfo; else return null; } }
@@ -137,6 +160,11 @@ namespace TelegramBotClean.Userses
                 return new List<string>() {UniqName, FirstName, Lastname, NickName,"NoName"}.Where(s => s != "").First();
             } 
         }
+        public string AllNames { get 
+            {
+          
+                return string.Join(",","nick:"+nickName, "uniq" + uniqName,"имя" +firstName,"фамилия"+lastName);
+            } }
         public UserType TypeUser { get { return type; } }
 
         public User(DataRow r):base(r)
@@ -155,14 +183,11 @@ namespace TelegramBotClean.Userses
 
         public string ToString()
         {
-            return $"({type.Name}:{Id}) {Name}";
+            return $"({type.Name}:{Id}) {Name} ";//[{AllNames}]
         }
         public string SideMenu()
         {
-
-            if (type == UserTypes.Teen && teenInfo.InAnonim) return "anon";
-            if (type == UserTypes.Teacher && teacherInfo.InAnswerAnon) return "answerAnon";
-            return "no";
+            return "";
         }
     }
 

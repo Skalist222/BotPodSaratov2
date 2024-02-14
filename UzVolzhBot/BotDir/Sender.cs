@@ -15,8 +15,7 @@ using TelegramBotClean.CommandsDir;
 using TelegramBotClean.TextDir;
 using TelegramBotClean.MessagesDir;
 using TelegramBotClean.Bible;
-using System.Reflection;
-using System.Net.Mail;
+
 
 namespace TelegramBotClean.Bot
 {
@@ -26,15 +25,16 @@ namespace TelegramBotClean.Bot
         CancellationToken token { get; }
         public Users Users { get; }
 
-        public BotDB BotBase { get; }
-        public BibleDB BibleDb { get; }
-        public Mems Mems { get; }
-        public Random Random { get; }
-        public TextWorker TextWorker { get; }
+        public BotDB    BotBase { get; }
+        public BibleDB  BibleDb { get; }
+        public Mems     Mems { get; }
+        public Random   Random { get; }
+        public TextWorker TextWorker { get;}
         public UnansveredsMeesages UnansweredMessage { get; }
-        public BibleWorker BibleWorker { get; }
+        public BibleWorker Bible { get; }
+        public Bless Bless { get; }
         public AnonMessages AnonMessages { get; }
-
+        public Spamer Spamer { get; }
 
 
 
@@ -51,9 +51,11 @@ namespace TelegramBotClean.Bot
             this.Mems = new Mems(BotBase,botClient,token);
             this.TextWorker = new TextWorker(BotBase,Random);
             this.UnansweredMessage = new UnansveredsMeesages(BotBase);
-            this.BibleWorker = new BibleWorker(BibleDb,BotBase,Random);
+            this.Bible = new BibleWorker(BibleDb, BotBase, Random);
+            this.Bless = new Bless(Bible,Random);
             this.AnonMessages = new AnonMessages();
-           
+            this.Spamer = new Spamer(this);
+
         }
 
         private async Task SendText(string text, long idChat)
@@ -62,7 +64,7 @@ namespace TelegramBotClean.Bot
             {
                 await botClient.SendTextMessageAsync(chatId: idChat, text: text);
             }
-            catch (Telegram.Bot.Exceptions.ApiRequestException ex)
+            catch (ApiRequestException ex)
             {
                 Console.WriteLine("Ошибка в отправке сообщения" + ex.Message);
             }
@@ -126,7 +128,10 @@ namespace TelegramBotClean.Bot
                 messageId: idMessage
                 );
         }
-
+        public async Task DeleteMesMenu(MessageI menuMes,User user)
+        {
+            DeleteMessage((int)menuMes.Id, user.Id);
+        }
         // Что можно делать извне
         public async Task SendMessage(MessageI message, long idChat)
         {
@@ -156,12 +161,12 @@ namespace TelegramBotClean.Bot
         {
             SendImage(bitMap, 1094316046L);
         }
-        public async Task SendMenuMessage(MesMenuTable menu, User user, string text = "")
+        public async Task<Message> SendMenuMessage(MesMenuTable menu, User user, string text = "")
         {
             InlineKeyboardMarkup ikm = new InlineKeyboardMarkup(menu);
             try
             {
-                await botClient.SendTextMessageAsync(
+                return await botClient.SendTextMessageAsync(
                     chatId: user.Id,
                     text: text,
                     replyMarkup: ikm
@@ -171,6 +176,7 @@ namespace TelegramBotClean.Bot
             {
                 Logger.Error(ex.Message);
                 Console.WriteLine(ex.Message);
+                return null;
             }
         }
 
@@ -281,14 +287,18 @@ namespace TelegramBotClean.Bot
                     if (selectedCommand == Commands.OffAnonCommand)
                         CommandsExecutor.ExOffAnon(this, receivedMes);
                     else
-                        CommandsExecutor.ExCreateAnonimMes(this, receivedMes);
+                    if (selectedCommand == Commands.SayNoWay)
+                    {
+                        CommandsExecutor.ExSetNoWentTeacher(this,receivedMes);
+                    }
+                    else CommandsExecutor.ExCreateAnonimMes(this, receivedMes);
                 }
                 if (sideMenu == "answerAnon")
                 {
                     if (selectedCommand == Commands.SelectCommands("/turnOff /answere").AsCommand())
-                        CommandsExecutor.ExecuteOffAnswereAnon(this, receivedMes);
+                        CommandsExecutor.ExOffAnswereAnon(this, receivedMes);
                     else
-                        CommandsExecutor.ExecuteSendAnswerAnon(this, receivedMes);
+                        CommandsExecutor.ExSendAnswerAnon(this, receivedMes);
                 }
             }
 

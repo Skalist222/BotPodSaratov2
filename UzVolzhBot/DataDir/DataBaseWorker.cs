@@ -678,9 +678,8 @@ namespace TelegramBotClean.Data
             long idWent = WentTeacher is not null ? WentTeacher.Id : 0;
             return InsertInto("AnonMessages",
                 new string[] {"idTeen","idWentTeacher","idAnswerTeacher","idMessage"},
-                new object[] {teen.Id,}
-                ); ;
-            // потом сделаю
+                new object[] {teen.Id, idWent,0, mesId }
+                ); 
         }
         //Messages
         public long CreateMessage(MessageI mes,Commands commands = null)

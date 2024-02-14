@@ -5,6 +5,8 @@ using User = TelegramBotClean.Userses.User;
 using Update = Telegram.Bot.Types.Update;
 using MessageTypeT = Telegram.Bot.Types.Enums.MessageType;
 using TelegramBotClean.TextDir;
+using static System.Net.Mime.MediaTypeNames;
+using Telegram.Bot.Types;
 
 namespace TelegramBotClean.Messages
 {
@@ -37,15 +39,18 @@ namespace TelegramBotClean.Messages
 
         // сеттеры
         public void SetText(string value) { text = value; }
-        private void SetCommands(Commands commands)
-        {
-            this.commands = commands;
-        }
+       
 
         public MessageI(string text)
         {
             SetText(text);
             Type = MessageTypes.Text;
+        }
+        public MessageI(string text, string fileId,string type)
+        {
+            this.text = text;
+            this.FileId = fileId;
+            Type = MessageTypes.Identify(type);
         }
         public MessageI(long id, long chatId, string text, User sender, string fileId,MessageType type)
         {
@@ -55,14 +60,14 @@ namespace TelegramBotClean.Messages
             FileId = fileId;
             ChatId = chatId;
             Type = type;
-            SetCommands(new Commands());
+            this.commands = commands;
         }
         public MessageI(Update up,User user)
-        {           
+        {
+            Sender = user;
             if (up.Message is not null)
             {
                 Id = up.Message.MessageId;
-                Sender = user;
                 ChatId = up.Message.Chat.Id;
                 SetText(up.Message.Text ?? up.Message.Caption ?? "");
                 SelectCommans();
@@ -74,26 +79,39 @@ namespace TelegramBotClean.Messages
             {
                 if (up.CallbackQuery.Data is not null)
                 {
+                    //Для точного определения команды
                     SetText(up.CallbackQuery.Data.ToString().Split('|')[0]);
                     SelectCommans();
+                    SetText(up.CallbackQuery.Data);
                 }
             }
         }
+        public MessageI(Telegram.Bot.Types.Message m,User user)
+        {
+            Id = m.MessageId;
+            Sender = user;
+            ChatId = m.Chat.Id;
+            SetText(m.Text ?? m.Caption ?? "");
+            SelectCommans();
+            string typeString = m.Type.ToString();
+            Type = MessageTypes.Identify(typeString, Text, Commands);
+            if (m.Photo is not null) FileId = m.Photo.First().FileId;
+        }
         private void SelectCommans()
         {
-            SetCommands(new Commands(false, true));
+            this.commands = new Commands(false, true);
 
             if (Text != "")
             {
                 string cleanText = Text.Replace(Invizible.One, "");
+                cleanText = cleanText.Trim(); 
                 if (cleanText == "")
                 {
-                   
                     return;
                 }
                 else
                 {
-                    SetCommands(Commands.SelectCommands(cleanText));
+                    this.commands =  Commands.SelectCommands(cleanText);
                 }
                 if (text[0] + "" == Invizible.One) Commands.FromButtonTrue();
                 else Commands.FromButtonFalse();
@@ -263,6 +281,15 @@ namespace TelegramBotClean.Messages
         /// </summary>
         /// <param name="telegramType"></param>
         /// <returns></returns>
+        /// 
+        public static MessageType Identify(string typeFrombase)
+        {
+            if (allTypes.ContainsKey(typeFrombase))
+            {
+                return allTypes[typeFrombase];
+            }
+            return Emprty;
+        }
         public static MessageType Identify(string telegramType, string text,Commands commands)
         {
             if (text != "") text = commands.IsEmpty ? "Command" : "Text";
@@ -275,6 +302,6 @@ namespace TelegramBotClean.Messages
                 return Emprty;
             }
         }
-
+        
     }
 }

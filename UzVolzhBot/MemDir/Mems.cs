@@ -44,7 +44,7 @@ namespace TelegramBotClean.MemDir
         {
             try
             {
-                //base.Add(new Mem(new MessageI("", fileId, idMessage, idChat)));
+                base.Add(new Mem(new MessageI("",fileId,MessageTypes.Photo.Name)));
             }
             catch
             {

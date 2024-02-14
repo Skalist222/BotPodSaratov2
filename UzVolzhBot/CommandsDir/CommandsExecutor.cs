@@ -1,6 +1,4 @@
-﻿using Telegram.Bot.Types;
-using TelegramBotClean.Bot;
-using TelegramBotClean.Commandses;
+﻿using TelegramBotClean.Bot;
 using TelegramBotClean.Data;
 using TelegramBotClean.MemDir;
 using TelegramBotClean.MenuDir;
@@ -33,7 +31,43 @@ namespace TelegramBotClean.CommandsDir
         }
         public static void ExAdminUsers(Sender sender, MessageI mes)
         {
-            //получение всех мемов
+            if (mes.Sender.IsAdmin) sender.SendAdminMessage(sender.Users.AsTextTable());
+            else sender.SendMessage("Ты не админ не пытайся получить данные пользователей!", mes.SenderId);
+
+        }
+        public static void ExAdminSenNewPrivilege(Sender sender, MessageI mes)
+        {
+            if (mes.Sender.IsAdmin)
+            {
+                string[] split = mes.Text.Split(' ');
+                if (split.Length == 5)
+                {
+                    try
+                    {
+                        long updateUserId = Convert.ToInt64(split[3]);
+                        User u = sender.Users[updateUserId];
+                        UserType type = UserTypes.Select(split[4]);
+                        if (type is null)
+                        {
+                            sender.SendAdminMessage($"Я не знаю такой тип, как ({split[4]})");
+                        }
+                        else
+                        {
+                            
+                        }
+                    }
+                    catch 
+                    {
+                        sender.SendAdminMessage($"Айди пользователя должно тип айди не соответствует({split[3]})");
+                    }
+                }
+                else
+                {
+                    sender.SendAdminMessage("Неверное количество вводимых данных, нужно 5 а у тебя "+split.Length);
+                }
+            }
+            else sender.SendMessage("Ты не админ не пытайся получить данные пользователей!", mes.SenderId);
+
         }
 
         public static void ExAllAnonimMessages(Sender sender, MessageI mes)
@@ -113,14 +147,14 @@ namespace TelegramBotClean.CommandsDir
         public static void ExVerse(Sender sender, MessageI mes)
         {
             sender.SendAdminMessage("Получена команда Стих");
-            string retText = sender.BibleWorker.GetRandomVerse().TextWithAddress;
+            string retText = sender.Bible.GetRandomVerse().TextWithAddress;
             sender.SendMessage(retText, mes.SenderId);
         }
         public static void ExGoldVerse(Sender sender, MessageI mes)
         {
             sender.SendAdminMessage("Получение случайного золотого стиха");
             string retText = sender.TextWorker.RandomAnswere("золотой","стих")+ TextWorker.Ln +
-                sender.BibleWorker.GetRandomGoldVerse().TextWithAddress;
+                sender.Bible.GetRandomGoldVerse().TextWithAddress;
             sender.SendMessage(retText, mes.SenderId);
         }
 
@@ -168,10 +202,23 @@ namespace TelegramBotClean.CommandsDir
 
         public static void ExOnAnon(Sender sender, MessageI mes)
         {
+            // Создаем кнопки для выбора предпочитаемого учителя
+            Users teachers = sender.Users.Teachers;
+            MesMenuTable table = new MesMenuTable();
+            MesMenuBut but = null;
+            for (int i = 0; i < teachers.Count; i++)
+            {
+                
+                but = new MesMenuBut(teachers.ByIndex(i).Name, "set went |" + teachers.ByIndex(i).Id);
+                table.Add(new MesMenuRow(but));
+            }
+            table.Add(new MesMenuRow(new MesMenuBut("Не важно", "sayNo went")));
+
+            MessageI menuMessage = new MessageI(sender.SendMenuMessage(table, mes.Sender, "Кому нужно ответить?").Result,mes.Sender);
             User u = sender.Users[mes.SenderId];
             if (u.TypeUser == UserTypes.Teen)
             {
-                u.TeenInfo.SetInAnon(sender.TextWorker);
+                u.TeenInfo.SetInAnon(sender.TextWorker, menuMessage);
                 sender.SendMenu(mes.SenderId, "Включена анонимная отправка сообщений");
             }
         }
@@ -182,17 +229,22 @@ namespace TelegramBotClean.CommandsDir
             {
                 u.TeenInfo.SetNotInAnon(sender.TextWorker);
                 sender.SendMenu(mes.SenderId, "Анонимизация отключена");
+                //Если ученик 
+                if(mes.Sender.TeenInfo.IdWentTeacher != 0)
+                    sender.SendMessage(
+                    "Ученик хочет чтобы на анонимное сообщение ответил именно ты",
+                    mes.Sender.TeenInfo.IdWentTeacher);
                 //Вот здесь еще должен быть спам преподавателям о том, что пришли анонимки
                 
             }
         }
         public static void ExCreateAnonimMes(Sender sender, MessageI mes)
         {
-            Console.WriteLine("Обработка анонимных сообщений");
-            sender.BotBase.CreateAnonMessage();
+            Console.WriteLine("Добавлена анонимка");
+            sender.BotBase.CreateAnonMessage(mes,mes.Sender.TeenInfo.AnonName,mes.Sender);
         }
 
-        public static void ExecuteOnAnswereAnon(Sender sender, MessageI mes)
+        public static void ExOnAnswereAnon(Sender sender, MessageI mes)
         {
             User u = sender.Users[mes.SenderId];
             long idTeen = Convert.ToInt64(mes.Text.Split('|')[1]);
@@ -202,7 +254,7 @@ namespace TelegramBotClean.CommandsDir
                 sender.SendMenu(mes.SenderId, "Отправленное дальше сообщение будет направлено ученику");
             }
         }
-        public static void ExecuteOffAnswereAnon(Sender sender, MessageI mes)
+        public static void ExOffAnswereAnon(Sender sender, MessageI mes)
         {
             User u = sender.Users[mes.SenderId];
            
@@ -212,7 +264,7 @@ namespace TelegramBotClean.CommandsDir
                 sender.SendMenu(mes.SenderId, "Отправка ответа отменена");
             }
         }
-        public static void ExecuteSendAnswerAnon(Sender sender, MessageI mes)
+        public static void ExSendAnswerAnon(Sender sender, MessageI mes)
         {
             User Teacher = sender.Users[mes.SenderId];
             User Teen = sender.Users[Teacher.TeacherInfo.IdTeenAnonMessage];
@@ -225,39 +277,32 @@ namespace TelegramBotClean.CommandsDir
                 sender.SendMenu(Teacher.Id,"Ответ отправлен!");
                 
             }
-            ExecuteOffAnswereAnon(sender,mes);
+            ExOffAnswereAnon(sender,mes);
         }
-
-
-        // Запускаются без команды
-       
-
-        //Внутренние проверки
-        private static bool ValidAnonimus(User user)
+        public static void ExSetWentTeacher(Sender sender, MessageI mes)
         {
-            if (user.TypeUser == UserTypes.Teen)
+            if (mes.Sender.TypeUser == UserTypes.Teen)
             {
-                return user.TeenInfo.InAnonim;
+                long idTeacher = Convert.ToInt64(mes.Text.Split('|')[1]);
+                mes.Sender.TeenInfo.SetWentedTeacher(idTeacher);
             }
-            else return false;
-        }
-        private static bool ValidAnswerOnAnonim(User user)
-        {
-            if (user.TypeUser == UserTypes.Teacher)
+            else
             {
-                return user.TeacherInfo.InAnswerAnon;
+                Console.WriteLine("захотели поставить конкретного учителя но не ученик");
             }
-            else return false;
+            
         }
-
-        public static string ValidAll(Sender sender, MessageI mes)
+        public static void ExSetNoWentTeacher(Sender sender, MessageI mes)
         {
-            if (ValidAnonimus(sender.Users[mes.SenderId])) return "anon";
-            if (ValidAnswerOnAnonim(sender.Users[mes.SenderId])) return "answerAnon";
-            return "OK";
+            //Удаляем мену с вопросом
+            sender.DeleteMesMenu(mes.Sender.TeenInfo.WentedTeacherMessage,mes.Sender);
+            //отправляем сообщение типа "ладно"
+            sender.SendMessage(sender.TextWorker.RandomAnswere("ok"),mes.Sender.Id);
+            
+            //Console.WriteLine("Ученику не важно какой учитель ответит ему на анонимку") ;
         }
-      
 
+     
     }
     
 }
