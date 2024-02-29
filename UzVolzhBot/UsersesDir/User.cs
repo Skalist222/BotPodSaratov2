@@ -1,6 +1,7 @@
 ﻿using Microsoft.Identity.Client;
 using System.Data;
 using System.Net.Security;
+using TelegramBotClean.Bible;
 using TelegramBotClean.Commandses;
 using TelegramBotClean.Data;
 using TelegramBotClean.Messages;
@@ -228,4 +229,98 @@ namespace TelegramBotClean.Userses
         }
     }
 
+}
+namespace TelegramBotClean.Users2
+{
+    public class User
+    {
+        private long id;
+        private string nickName;
+        private string lastname;
+        private string firstName;
+        private string uniqName;
+        private bool spam;
+        private bool ban;
+        private bool deleted;
+
+        private Verse lastverse;
+        private Privileges privileges;
+        
+        
+
+        public long Id { get { return id; } }
+        public string NickName { get { return nickName; } }
+        public string Lastname {  get { return lastname; } }
+        public string FirstName {  get { return firstName; } }
+        public string UniqueName { get { return uniqName; } }
+        public string TypeName { get { return privileges.Name; } }
+        public bool Spam { get { return spam; } }
+        public bool Ban { get { return ban; } }
+        public bool Deleted { get { return deleted; } }
+
+        public Verse Lastverse {  get { return lastverse; } }
+        public Privileges Type { get { return privileges; } }
+
+        public User(long id, string nickName, string lastname, string firstName, string uniqName, bool spam, bool ban, bool deleted, Verse lastverse, Privileges privileges)
+        {
+            this.id = id;
+            this.nickName = nickName;
+            this.lastname = lastname;
+            this.firstName = firstName;
+            this.uniqName = uniqName;
+            this.spam = spam;
+            this.ban = ban;
+            this.deleted = deleted;
+            this.lastverse = lastverse;
+            this.privileges = privileges;
+        }
+        public User(DataRow r,BibleWorker bW)
+        {
+            this.id = Convert.ToInt64(r["id"].ToString());
+            this.nickName = r["nick"].ToString() ;
+            this.lastname = r["lastname"].ToString();
+            this.firstName = r["firstName"].ToString();
+            this.uniqName = r["uniqName"].ToString();
+            this.spam = r["firstName"].ToString() == "True";
+            this.ban = r["ban"].ToString() == "True";
+            this.deleted = r["firstName"].ToString() == "True";
+            this.lastverse = bW.GetVerseByAddress(r["lastStih"].ToString());
+            this.privileges = Privileges.Select(r["privileges"].ToString());
+        }
+    }
+    public class Privileges
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+        public string Description { get; set; }
+
+        private Privileges(int id, string name, string description)
+        {
+            Id = id;
+            Name = name;
+            Description = description;
+        }
+        public static Dictionary<string, Privileges> allPrivileges = new Dictionary<string, Privileges>()
+        {
+            { "admin", new Privileges(0, "admin", "Права администратора")},
+            { "user", new Privileges(1, "user", "стандартный пользователь")},
+            { "teen", new Privileges(2, "teen", "ученик")},
+            { "teacher", new Privileges(3, "teacher", "учитель")}
+        };
+        public Privileges Admin { get { return allPrivileges["admin"]; } }
+        public Privileges DefaultUser { get { return allPrivileges["user"]; } }
+        public Privileges Teen { get { return allPrivileges["teen"]; } }
+        public Privileges Teacher { get { return allPrivileges["teacher"]; } }
+        public static Privileges Select(string name)
+        {
+            if (allPrivileges.ContainsKey(name))
+            {
+                return allPrivileges[name];
+            }
+            else
+            {
+                return allPrivileges["user"];
+            }
+        }
+    }
 }

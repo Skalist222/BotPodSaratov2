@@ -50,6 +50,26 @@ namespace TelegramBotClean.Bible
         {
             return this.GoldVerses[Random.Next(GoldVerses.Count)];
         }
+        public Verse GetVerseByAddress(string address)
+        {
+            if (address == "") return null;
+            Verse v = Verses[address];
+            if (v is null)
+            {
+                Logger.Error($"{address} не найден в библии!!!");
+                return null;
+            }
+            else
+            {
+                return v;
+            }
+            
+        }
+        public Verse GetVerseByAddress(AddressVerse address)
+        {
+            if (address is not null) return GetVerseByAddress(address.ToString());
+            else return null;
+        }
     }
     
     public class AddressVerse
@@ -68,13 +88,17 @@ namespace TelegramBotClean.Bible
             this.chapter = chapter;
             this.verse = verse;
         }
-        public AddressVerse(string textAddress, BibleWorker bibleWorker)
+        private AddressVerse(string textAddress, BibleWorker bibleWorker)
         {
             string[] split = textAddress.Split(' ');
             string bookShortName = split[0];
             long chapterNumber = Convert.ToInt64(split[1].Split(':')[0]);
         }
-        
+        public static AddressVerse ByTextAddress(string textAddress, BibleWorker bibleWorker)
+        {
+            return new AddressVerse(textAddress, bibleWorker);
+           
+        }
         //public string ToString()
         //{
             

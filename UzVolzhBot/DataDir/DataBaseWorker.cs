@@ -518,16 +518,7 @@ namespace TelegramBotClean.Data
             }
 
         }
-        public bool CreateUser(User user)
-        {
-            if (GetUser(user.Id) is null)
-            {
-                return Execute($"Insert Into users(Id,nick,lastName,firstName,lastStih,spam,privileges,uniqName,ban)" +
-                    $"values" +
-                    $"({user.Id},N'{user.NickName}',N'{user.Lastname}',N'{user.FirstName}','-',1,N'{user.TypeUser.Name}',N'{user.UniqName}',0)");
-            }
-            return false;
-        }
+        
         public Dictionary<long, string> GetUniqNamesWithId()
         {
             Dictionary<long, string> retValue = new Dictionary<long, string>();
@@ -644,16 +635,11 @@ namespace TelegramBotClean.Data
         {
             return SelectAllIn("Messages", "command='" + Commands.Get("+ мем").Name + "'");
         }
-        public long CreateMem(Mem mem)
-        {
-            return CreateMessage(mem.Message);
-        }
-
-        
-        
+      
 
 
-        //AnonimNames
+
+
         public string[] GetAllAnonimNames()
         {
             return SelectAllIn("AnonimUserName")
@@ -661,16 +647,17 @@ namespace TelegramBotClean.Data
                 .Select(el => el[1].ToString())
                 .ToArray();
         }
+        public DataTable GetAllAnon()
+        {
+            return SelectAllIn("AnonMessages,Messages", "AnonMessage.idMessage = Messages.id");
+        }
+        //AnonimNames
         public long CreateAnonName()
         {
             return InsertInto("AnonimUserName",new string[] { "name" }, 
                 new object[] { "Проверка"},true);
         }
-        //AnonimMessages
-        public DataTable GetAllAnon()
-        {
-            return SelectAllIn("AnonMessages,Messages", "AnonMessage.idMessage = Messages.id");
-        }
+     
         public long CreateAnonMessage(MessageI mes, string anonName, User teen, User WentTeacher = null)
         {
             long mesId = CreateMessage(mes,Commands.SelectCommands("anon"));
@@ -698,7 +685,20 @@ namespace TelegramBotClean.Data
             
 
         }
-
+        public long CreateMem(Mem mem)
+        {
+            return CreateMessage(mem.Message);
+        }
+        public bool CreateUser(User user)
+        {
+            if (GetUser(user.Id) is null)
+            {
+                return Execute($"Insert Into users(Id,nick,lastName,firstName,lastStih,spam,privileges,uniqName,ban)" +
+                    $"values" +
+                    $"({user.Id},N'{user.NickName}',N'{user.Lastname}',N'{user.FirstName}','-',1,N'{user.TypeUser.Name}',N'{user.UniqName}',0)");
+            }
+            return false;
+        }
 
         //GoldVerses
         public DataTable GetGoldVerses()
