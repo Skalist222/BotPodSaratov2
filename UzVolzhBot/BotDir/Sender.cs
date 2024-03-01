@@ -4,9 +4,8 @@ using System.Drawing;
 using Telegram.Bot.Types.ReplyMarkups;
 using Telegram.Bot.Types.InputFiles;
 using TelegramBotClean.Messages;
-using TelegramBotClean.Userses;
 using TelegramBotClean.Data;
-using User = TelegramBotClean.Userses.User;
+using User = TelegramBotClean.Users.User;
 using TelegramBotClean.MemDir;
 using TelegramBotClean.MenuDir;
 using Telegram.Bot.Exceptions;
@@ -15,6 +14,8 @@ using TelegramBotClean.CommandsDir;
 using TelegramBotClean.TextDir;
 using TelegramBotClean.MessagesDir;
 using TelegramBotClean.Bible;
+using TelegramBotClean.Users;
+using TelegramBotClean.UsersesDir;
 
 
 namespace TelegramBotClean.Bot
@@ -23,7 +24,7 @@ namespace TelegramBotClean.Bot
     {
         TelegramBotClient botClient { get; }
         CancellationToken token { get; }
-        public Users Users { get; }
+        public Users.Users Users { get; }
 
         public BotDB    BotBase { get; }
         public BibleDB  BibleDb { get; }
@@ -46,12 +47,12 @@ namespace TelegramBotClean.Bot
             this.Random = new Random();
             this.BotBase = new BotDB(Random);
             this.BibleDb = new BibleDB(Random);
+            this.Bible = new BibleWorker(BibleDb, BotBase, Random);
 
-            this.Users = new Users(BotBase);          
+            this.Users = new Users.Users(BotBase, Bible);          
             this.Mems = new Mems(BotBase,botClient,token);
             this.TextWorker = new TextWorker(BotBase,Random);
             this.UnansweredMessage = new UnansveredsMeesages(BotBase);
-            this.Bible = new BibleWorker(BibleDb, BotBase, Random);
             this.Bless = new Bless(Bible,Random);
             this.AnonMessages = new AnonMessages();
             this.Spamer = new Spamer(this);
@@ -189,9 +190,9 @@ namespace TelegramBotClean.Bot
             if (textInfo == "") textInfo = "Мир тебе, дорогой мой друг"; 
             User u = Users[idChat];
             BaseMenu menu = new BaseMenu();
-            if (u.TypeUser == UserTypes.Teen)
+            if (u.Type == Privileges.Teen)
             {
-                if (!u.TeenInfo.InAnonim)
+                if (!u.InAnon)
                 {
                     menu = new TeenMenu();
                 }
@@ -200,9 +201,9 @@ namespace TelegramBotClean.Bot
                     menu = new TeenOnAnonMenu();
                 }
             }
-            if (u.TypeUser == UserTypes.Teacher)
+            if (u.Type == Privileges.Teacher)
             {
-                if (!u.TeacherInfo.InAnswerAnon)
+                if (!u.InAnswerAnon)
                 {
                     menu = new TeacherMenu();
                 }
@@ -253,7 +254,7 @@ namespace TelegramBotClean.Bot
             if (up.Message is not null) telegramUser = up.Message.From;
             else telegramUser = up.CallbackQuery.From;
 
-            
+
             User user = Users.GetOrCreate(telegramUser, BotBase);//инициализируем пользователя
             if (user is null)
             {
@@ -261,8 +262,8 @@ namespace TelegramBotClean.Bot
                 return;
             } // Если даже после этого этапа, юзер не определен значит есть какаято ошибка
             MessageI receivedMes = new MessageI(up, user);// инициализируем сообщение
-            string sideMenu = user.SideMenu();
-            Command selectedCommand = receivedMes.Commands.AsCommand();
+            string sideMenu = user.SideMenu;
+             Command selectedCommand = receivedMes.Commands.AsCommand();
 
             if (sideMenu == "no")// Если пользователь находится в стандартном для него меню
             {

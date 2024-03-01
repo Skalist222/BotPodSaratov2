@@ -205,10 +205,6 @@ namespace TelegramBotClean.Bible
         {
             return TextWithAddress;
         }
-
-       
-
-
         public Verse(long verseNumber,long idChapter, long idVerse,string text,Books books,Chapters chapters)
         {
             this.verseNumber = verseNumber;
@@ -220,6 +216,7 @@ namespace TelegramBotClean.Bible
 
             address = new AddressVerse(b,c,this);
         }
+      
 
     }
     public class Verses :List<Verse> 

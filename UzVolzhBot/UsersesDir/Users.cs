@@ -1,205 +1,107 @@
-﻿using Microsoft.Identity.Client;
-using System;
-using System.Data;
-using Telegram.Bot.Types;
+﻿using System.Data;
 using TelegramBotClean.Data;
-using TelegramBotClean.TextDir;
-using Logger = TelegramBotClean.Data.Logger;
-using static TelegramBotClean.TextDir.TextWorker;
+using TelegramBotClean.Bible;
+using TelegramBotClean.UsersesDir;
 
-namespace TelegramBotClean.Userses
+namespace TelegramBotClean.Users
 {
-    public class Users:List<User>
+    public class Users : List<User>
     {
-        public string ToString()
+        BibleWorker bible;
+        private Users(BibleWorker bW):base()
         {
-            if (this.Count == 0) return "empty";
-            else
-            {
-                return $"({this.Count}) Ученики:{CountTeen}, Учителя:{CountTeacher}, Прихожане:{this.Count-(CountTeacher+CountTeen)}";
-            }
+            this.bible = bW;
         }
-        public int CountTeacher {
-            get 
-            {
-                if (this.Count == 0) return 0;
-                else
-                {
-                    return this.Where(x => x.TypeUser == UserTypes.Teacher).Count();
-                }
-            } 
-        }
-        public int CountTeen
+        public Users(DataTable t,BibleWorker bW):this(bW)
         {
-            get
+            if (ValidationDataTableOnList(t))
             {
-                if (this.Count == 0) return 0;
-                else
+                for (int i = 0; i < t.Rows.Count; i++)
                 {
-                    return this.Where(x => x.TypeUser == UserTypes.Teen).Count();
+                    this.Add(new User(t.Rows[i],bW));
                 }
             }
         }
-        public bool Have(long idUser)
-        {
-            return this.Where(el => el.Id == idUser).Count() == 1;
-        }
-        public bool Have(User user)
-        {
-            return Have(user.Id);
-        }
-
-        public Users() : base() { }
-        public Users(List<User> userList) : base()
-        {
-            for (int i = 0; i < userList.Count; i++)
-            {
-                base.Add(userList[i]);
-            }
-        }
-        public Users(DataTable dbTable):base()
-        {
-            for (int i = 0; i < dbTable.Rows.Count; i++)
-            {
-                User u = null;
-                DataRow r = dbTable.Rows[i];
-                string priv = r["privileges"].ToString().Trim();
-                if (priv == "teen")
-                {
-                    u = new Teen(r);
-                }
-                else
-                if (priv == "teacher")
-                {
-                    u = new Teacher(r);
-                }
-                else
-                if (priv == "admin")
-                {
-                    u = new Admin(r);
-                }
-                else
-                {
-                    u = new DefaultUser(r);
-                }
-                this.Add(u);
-            }
-        }
-        public Users(BotDB botBase):base()
-        {
-            DataTable t = botBase.GetAllUsers();
-            for (int i = 0; i < t.Rows.Count; i++)
-            {
-                User u = null;
-                DataRow r = t.Rows[i];
-                string priv = r["privileges"].ToString().Trim();
-
-                if (priv == "teen")
-                {
-                    u = new Teen(r);
-                }
-                else
-                if (priv == "teacher")
-                {
-                    u = new Teacher(r);
-                }
-                else
-                if (priv == "admin")
-                {
-                    u = new Admin(r);
-                }
-                else
-                {
-                    u = new DefaultUser(r);
-                }
-                this.Add(u);
-            }
-        }
-        public User? this[long id]
+        public Users(BotDB botBase,BibleWorker bW):this(botBase.GetAllUsers(),bW){}
+        public Users Teachers
         {
             get 
             {
-                if (this.Count == 0) return null;
-                try
-                {
-                    var grp = this.Where(u => u.Id == id);
-                    if (grp.Count() == 0) return null;
-                    else return grp.First();
-                }
-                catch (InvalidOperationException ex)
-                { return null; }               
+                Users u = (Users)this.Where(e => e.Type == Privileges.Teacher).AsEnumerable().ToList();
+                u.bible = this.bible;
+                return u;
             }
         }
-        public User? ByIndex(int index)
-        {
-            return base[index];
-        }
-        public Users Teachers { get
-            {
-                return new Users(this.Where(el => el.TypeUser == UserTypes.Teacher).ToList());
-            } 
-        }
+
         public Users Teens
         {
             get
             {
-                return new Users(this.Where(el => el.TypeUser == UserTypes.Teen).ToList());
+                Users u = (Users)this.Where(e => e.Type == Privileges.Teen).AsEnumerable().ToList();
+                u.bible = this.bible;
+                return u;
             }
         }
-        public void Add(User user)
-        {
-            base.Add(user);
-        }
-        public User GetOrCreate(Telegram.Bot.Types.User telegramUser, BotDB botBase)
-        {
-            User newUser = new User(telegramUser);
 
-            //Если список пользователей пустой
-            if (this.Count == 0)
+        public User ByIndex(int index)
+        {
+            return base[index];
+        }
+
+        public string AsTextTable() 
+        {
+            string tabelString="";
+            for (int i = 0; i < this.Count; i++)
             {
-                //Пытаемся добавить пользователя в базу данных
-                return AttemptAddToBase(newUser, botBase);
+                tabelString += this[i].Id+" " + this[i].Name + Environment.NewLine;
             }
-            //Если список пользователей содержит хоть одного пользователя
-            else
-            {
-                //Если пользователь не найден
-                if (!Have(telegramUser.Id))
+            return tabelString;
+        }
+
+        public User this[long id]
+        {
+            get {
+                try { return this.Where(e => e.Id == id).FirstOrDefault(User.Empty); }
+                catch 
                 {
-                    //Пытаемся добавить пользователя в базу данных
-                    return AttemptAddToBase(newUser, botBase);
+                    Console.WriteLine("asdadasd");
+                    return User.Empty;
+                }
+            }
+        }
+        public User GetOrCreate(Telegram.Bot.Types.User telegramUser,BotDB botBase)
+        {
+            User u = this[telegramUser.Id];
+            if (u == User.Empty)
+            {
+                u = new User(telegramUser, bible);
+                if (botBase.CreateUser(u))
+                {
+                    this.Add(u);
+                    return this[u.Id];
                 }
                 else
                 {
-                    // если пользователь нашелся
-                    return this[newUser.Id];
+                    Console.WriteLine("Ошибка добавления пользователя в базу данных");
+                    return User.Empty;
                 }
-            }
-        }
-        private User AttemptAddToBase(User user,BotDB botBase)
-        {
-            if (botBase.CreateUser(user))
-            {
-                // если получилось добавить в базу данных, добавляем в список пользователей
-                Add(user);
-                // возвращаем имеено того пользователя, который находится в списке а не нового созданного извне
-                return this[user.Id];
             }
             else
             {
-                Logger.Error("При добавке пользователя произошли ошибки");
-                return null;
+                return u;
             }
+           
         }
 
-        public string AsTextTable()
+        public bool ValidationDataTableOnList(DataTable t)
         {
-            string retText = "";
-            for (int i = 0; i < this.Count; i++)
-            {
-                retText += (i+1)+")"+this.ByIndex(i).ToString()+Ln;
-            }
-            return retText;
+            return t.Columns.Count == 10;            
+        }
+
+        internal bool Have(long id,Privileges type = null)
+        {
+            if(type is null) return this.Where(e => e.Id == id).Count() == 1;
+            else return this.Where(e => e.Id == id && e.Type == type).Count() == 1;
         }
     }
 }

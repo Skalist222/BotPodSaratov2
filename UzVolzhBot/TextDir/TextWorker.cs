@@ -3,7 +3,8 @@ using Telegram.Bot.Requests;
 using TelegramBotClean.Bot;
 using TelegramBotClean.Commandses;
 using TelegramBotClean.Data;
-using TelegramBotClean.Userses;
+using TelegramBotClean.Users;
+using TelegramBotClean.UsersesDir;
 
 namespace TelegramBotClean.TextDir
 {
@@ -101,7 +102,7 @@ namespace TelegramBotClean.TextDir
 
             string retInformation = "";
             retInformation += "Кнопка (Помощь): при нажатии на кнопку срабатывает окошко с помощью" + Ln;
-            if (user.TypeUser == UserTypes.Teen)
+            if (user.Type == Privileges.Teen)
             {
                 retInformation += "Кнопка (Включить Анон): При нажатии, включается режим анонимности, и отключаются все возможности бота. Все сообщения, которые  ты отправишь, будут анонимно направлены учителям. Они смогут тебе ответить на любые вопросы.";
                 retInformation += "Кнопка (Отключить Анон): Появляется после включения анона. После нажатия, включаются все функции бота и отключается режим анонимности.";

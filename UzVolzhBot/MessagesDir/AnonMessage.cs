@@ -7,7 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TelegramBotClean.Data;
 using TelegramBotClean.Messages;
-using TelegramBotClean.Userses;
+using TelegramBotClean.Users;
 
 namespace TelegramBotClean.MessagesDir
 {
@@ -47,7 +47,7 @@ namespace TelegramBotClean.MessagesDir
 
         }
 
-        public AnonMessages(BotDB botBase, Users users) : base()
+        public AnonMessages(BotDB botBase, Users.Users users) : base()
         {
             DataTable fromDataBase = botBase.GetAllAnon();
             for (int i = 0; i < fromDataBase.Rows.Count; i++)

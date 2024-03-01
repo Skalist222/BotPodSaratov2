@@ -1,12 +1,7 @@
 ﻿using TelegramBotClean.Commandses;
-
-using TelegramBotClean.Userses;
-using User = TelegramBotClean.Userses.User;
+using User = TelegramBotClean.Users.User;
 using Update = Telegram.Bot.Types.Update;
-using MessageTypeT = Telegram.Bot.Types.Enums.MessageType;
 using TelegramBotClean.TextDir;
-using static System.Net.Mime.MediaTypeNames;
-using Telegram.Bot.Types;
 
 namespace TelegramBotClean.Messages
 {

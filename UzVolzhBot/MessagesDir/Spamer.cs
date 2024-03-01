@@ -4,7 +4,7 @@ using System.Globalization;
 using Telegram.Bot.Types;
 using TelegramBotClean.Bot;
 using TelegramBotClean.Messages;
-using TelegramBotClean.Userses;
+using TelegramBotClean.Users;
 
 namespace TelegramBotClean.MessagesDir
 {
@@ -73,7 +73,7 @@ namespace TelegramBotClean.MessagesDir
         }
         public async Task SendTextTeachers(MessageI message)
         {
-            Users teachers = sender.Users.Teachers;
+            Users.Users teachers = sender.Users.Teachers;
             for (int i = 0; i < teachers.Count; i++)
             {
                 await sender.SendMessage(message, teachers.ByIndex(i).Id);
@@ -81,7 +81,7 @@ namespace TelegramBotClean.MessagesDir
         }
         public async Task SendTextTeens(MessageI message)
         {
-            Users teens = sender.Users.Teens;
+            Users.Users teens = sender.Users.Teens;
             for (int i = 0; i < teens.Count; i++)
             {
                 await sender.SendMessage(message, teens.ByIndex(i).Id);

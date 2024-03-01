@@ -21,8 +21,10 @@ namespace TelegramBotClean.Data
         }
         public static void Info(string msg, string method = "", bool segment = true)
         {
+            Console.WriteLine(msg);
             if (!segment)
             {
+                
                 if (!segmentStart) Debug.WriteLine("````````````````````````info```````````````````````");
                 Debug.WriteLine(msg);
                 if (method != "") Debug.WriteLine("In method " + method);

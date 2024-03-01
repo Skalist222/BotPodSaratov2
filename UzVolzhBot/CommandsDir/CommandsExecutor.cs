@@ -5,8 +5,8 @@ using TelegramBotClean.MenuDir;
 using TelegramBotClean.Messages;
 using TelegramBotClean.MessagesDir;
 using TelegramBotClean.TextDir;
-using TelegramBotClean.Userses;
-using User = TelegramBotClean.Userses.User;
+using TelegramBotClean.UsersesDir;
+using User = TelegramBotClean.Users.User;
 
 namespace TelegramBotClean.CommandsDir
 {
@@ -45,8 +45,8 @@ namespace TelegramBotClean.CommandsDir
                     try
                     {
                         long updateUserId = Convert.ToInt64(split[3]);
-                        User u = sender.Users[updateUserId];
-                        UserType type = UserTypes.Select(split[4]);
+                        User u = sender.Users[updateUserId];  //
+                        Privileges type = Privileges.Select(split[4]);
                         if (type is null)
                         {
                             sender.SendAdminMessage($"Я не знаю такой тип, как ({split[4]})");
@@ -107,28 +107,8 @@ namespace TelegramBotClean.CommandsDir
             sender.SendAdminMessage("Получена команда старт");
             User user = sender.Users[mes.SenderId];
             // При начале работы бота или при нажатии на кнопку старт
-            if (user == null)
-            {
-                if (sender.BotBase.CreateUser(new User(new Telegram.Bot.Types.User() )))
-                {
-                    sender.Users.Add(sender.BotBase.GetUser(mes.SenderId));
-                    sender.SendAdminMessage("Создан новый пользователь " + sender.Users[mes.SenderId].ToString());
-                    Console.WriteLine("Добавлен новый пользователь");
-                    sender.SendMenu(mes.SenderId, "Привет, дорогой друг. Этот бот предназначен для учеников воскресной школы(подростков). Нажми /help чтобы разобраться, как работает бот.");
-                }
-                else
-                {
-                    Console.WriteLine("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                    Console.WriteLine("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                    Console.WriteLine("!!!Не удалось добавить пользователя!!!");
-                    Console.WriteLine("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                    Console.WriteLine("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                }
-            }
-            else
-            {
-                sender.SendMenu(mes.SenderId, "Рад тебя снова видеть!");
-            }
+            sender.SendMenu(mes.SenderId, "Рад тебя снова видеть!");
+            
         }
         public static void ExMem(Sender sender, MessageI mes)
         {
@@ -203,12 +183,11 @@ namespace TelegramBotClean.CommandsDir
         public static void ExOnAnon(Sender sender, MessageI mes)
         {
             // Создаем кнопки для выбора предпочитаемого учителя
-            Users teachers = sender.Users.Teachers;
+            Users.Users teachers = sender.Users.Teachers;
             MesMenuTable table = new MesMenuTable();
             MesMenuBut but = null;
             for (int i = 0; i < teachers.Count; i++)
             {
-                
                 but = new MesMenuBut(teachers.ByIndex(i).Name, "set went |" + teachers.ByIndex(i).Id);
                 table.Add(new MesMenuRow(but));
             }
@@ -216,24 +195,24 @@ namespace TelegramBotClean.CommandsDir
 
             MessageI menuMessage = new MessageI(sender.SendMenuMessage(table, mes.Sender, "Кому нужно ответить?").Result,mes.Sender);
             User u = sender.Users[mes.SenderId];
-            if (u.TypeUser == UserTypes.Teen)
+            if (u.Type == Privileges.Teen)
             {
-                u.TeenInfo.SetInAnon(sender.TextWorker, menuMessage);
+                u.SetInAnonOn(sender.TextWorker, menuMessage);
                 sender.SendMenu(mes.SenderId, "Включена анонимная отправка сообщений");
             }
         }
         public static void ExOffAnon(Sender sender, MessageI mes)
         {
             User u = sender.Users[mes.SenderId];
-            if (u.TypeUser == UserTypes.Teen)
+            if (u.Type == Privileges.Teen)
             {
-                u.TeenInfo.SetNotInAnon(sender.TextWorker);
+                u.SetInAnonOff(sender.TextWorker);
                 sender.SendMenu(mes.SenderId, "Анонимизация отключена");
                 //Если ученик 
-                if(mes.Sender.TeenInfo.IdWentTeacher != 0)
+                if(mes.Sender.IdWentTeacher != 0)
                     sender.SendMessage(
                     "Ученик хочет чтобы на анонимное сообщение ответил именно ты",
-                    mes.Sender.TeenInfo.IdWentTeacher);
+                    mes.Sender.IdWentTeacher);
                 //Вот здесь еще должен быть спам преподавателям о том, что пришли анонимки
                 
             }
@@ -241,16 +220,16 @@ namespace TelegramBotClean.CommandsDir
         public static void ExCreateAnonimMes(Sender sender, MessageI mes)
         {
             Console.WriteLine("Добавлена анонимка");
-            sender.BotBase.CreateAnonMessage(mes,mes.Sender.TeenInfo.AnonName,mes.Sender);
+            sender.BotBase.CreateAnonMessage(mes,mes.Sender.AnonName,mes.Sender);
         }
 
         public static void ExOnAnswereAnon(Sender sender, MessageI mes)
         {
             User u = sender.Users[mes.SenderId];
             long idTeen = Convert.ToInt64(mes.Text.Split('|')[1]);
-            if (u.TypeUser == UserTypes.Teacher)
+            if (u.Type == Privileges.Teacher)
             {
-                u.TeacherInfo.TurnOnAnswerOnAnon(idTeen);
+                u.TurnOnAnswerOnAnon(idTeen);
                 sender.SendMenu(mes.SenderId, "Отправленное дальше сообщение будет направлено ученику");
             }
         }
@@ -258,22 +237,22 @@ namespace TelegramBotClean.CommandsDir
         {
             User u = sender.Users[mes.SenderId];
            
-            if (u.TypeUser == UserTypes.Teacher)
+            if (u.Type == Privileges.Teacher)
             {
-                u.TeacherInfo.TurnOffAnswerOnAnon();
+                u.TurnOffAnswerOnAnon();
                 sender.SendMenu(mes.SenderId, "Отправка ответа отменена");
             }
         }
         public static void ExSendAnswerAnon(Sender sender, MessageI mes)
         {
             User Teacher = sender.Users[mes.SenderId];
-            User Teen = sender.Users[Teacher.TeacherInfo.IdTeenAnonMessage];
-            if (Teacher.TypeUser == UserTypes.Teacher)
+            User Teen = sender.Users[Teacher.IdTeenAnonMessage];
+            if (Teacher.Type == Privileges.Teacher)
             {
                 sender.UnansweredMessage.SetAnswered(Teen.Id);
-                sender.SendMessage($"Ответ на анонимку от ({Teacher.UniqName})", Teen.Id);
+                sender.SendMessage($"Ответ на анонимку от ({Teacher.UniqueName})", Teen.Id);
                 sender.SendMessage(mes.Text, Teen.Id);
-                Teacher.TeacherInfo.TurnOffAnswerOnAnon();
+                Teacher.TurnOffAnswerOnAnon();
                 sender.SendMenu(Teacher.Id,"Ответ отправлен!");
                 
             }
@@ -281,10 +260,10 @@ namespace TelegramBotClean.CommandsDir
         }
         public static void ExSetWentTeacher(Sender sender, MessageI mes)
         {
-            if (mes.Sender.TypeUser == UserTypes.Teen)
+            if (mes.Sender.Type == Privileges.Teen)
             {
                 long idTeacher = Convert.ToInt64(mes.Text.Split('|')[1]);
-                mes.Sender.TeenInfo.SetWentedTeacher(idTeacher);
+                mes.Sender.SetWentedTeacher(idTeacher,mes);
             }
             else
             {
@@ -295,7 +274,7 @@ namespace TelegramBotClean.CommandsDir
         public static void ExSetNoWentTeacher(Sender sender, MessageI mes)
         {
             //Удаляем мену с вопросом
-            sender.DeleteMesMenu(mes.Sender.TeenInfo.WentedTeacherMessage,mes.Sender);
+            sender.DeleteMesMenu(mes.Sender.WentedTeacherMessage,mes.Sender);
             //отправляем сообщение типа "ладно"
             sender.SendMessage(sender.TextWorker.RandomAnswere("ok"),mes.Sender.Id);
             

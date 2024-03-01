@@ -3,7 +3,7 @@ using System.Timers;
 using TelegramBotClean.Bot;
 using TelegramBotClean.Data;
 using TelegramBotClean.Messages;
-using TelegramBotClean.Userses;
+using TelegramBotClean.Users;
 
 namespace TelegramBotClean.MessagesDir
 {

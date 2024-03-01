@@ -3,16 +3,12 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
-using System.Timers;
-using Telegram.Bot.Types;
 using TelegramBotClean.Bible;
 using TelegramBotClean.Commandses;
 using TelegramBotClean.MemDir;
 using TelegramBotClean.Messages;
-using TelegramBotClean.MessagesDir;
-using TelegramBotClean.Userses;
 using static TelegramBotClean.Data.Logger;
-using User = TelegramBotClean.Userses.User;
+using User = TelegramBotClean.Users.User;
 
 namespace TelegramBotClean.Data
 {
@@ -71,7 +67,7 @@ namespace TelegramBotClean.Data
         /// <returns> возвращает true если удалось создать строку подключения</returns>
         protected abstract bool CreateConnection(string baseName);
 
-
+        
         /// <summary>
         /// Попытка подключения к базе данных
         /// </summary>
@@ -199,6 +195,7 @@ namespace TelegramBotClean.Data
             string sqlCommandString = string.Join(" ", new string[] { "Select * FROM", table, WhereString, ";" });
             return Select(sqlCommandString);
         }
+        
 
         public string SelecteStringAllIn(string table, string where = "")
         {
@@ -261,7 +258,11 @@ namespace TelegramBotClean.Data
                 }
             }
         }
-
+        protected bool SelectExist(string table,string where)
+        {
+            return SelectAllIn(table,where).Rows.Count!=0;
+            
+        }
         protected string SelectOneString(string sql)
         {
             DataTable t = Select(sql);
@@ -504,19 +505,21 @@ namespace TelegramBotClean.Data
             return dbTable;
 
         }
-        public User GetUser(long id)
+        public DataTable GetUserData(long id)
         {
             DataTable t = SelectAllIn("users", "id = " + id);
             if (t.Rows.Count == 1)
             {
-                DataRow r = t.Rows[0];
-                return new User(r);
+                return t;
             }
             else
             {
-                return null;
+                return new DataTable();
             }
-
+        }
+        public bool GetExistUser(long id)
+        {
+            return SelectExist("users", $"id={id}");
         }
         
         public Dictionary<long, string> GetUniqNamesWithId()
@@ -691,11 +694,11 @@ namespace TelegramBotClean.Data
         }
         public bool CreateUser(User user)
         {
-            if (GetUser(user.Id) is null)
+            if (GetExistUser(user.Id) )
             {
                 return Execute($"Insert Into users(Id,nick,lastName,firstName,lastStih,spam,privileges,uniqName,ban)" +
                     $"values" +
-                    $"({user.Id},N'{user.NickName}',N'{user.Lastname}',N'{user.FirstName}','-',1,N'{user.TypeUser.Name}',N'{user.UniqName}',0)");
+                    $"({user.Id},N'{user.NickName}',N'{user.Lastname}',N'{user.FirstName}','-',1,N'{user.TypeName}',N'{user.UniqueName}',0)");
             }
             return false;
         }
