@@ -22,6 +22,7 @@ namespace TelegramBotClean.Bot
 {
     public class Sender
     {
+        bool SaveAllMessageInDataBase = false;
         TelegramBotClient botClient { get; }
         CancellationToken token { get; }
         public Users.Users Users { get; }
@@ -41,20 +42,38 @@ namespace TelegramBotClean.Bot
 
         public Sender(TelegramBotClient botClient, CancellationToken token)
         {
+
             this.botClient = botClient;
             this.token = token;
 
             this.Random = new Random();
+            Logger.Info("Получение базы Бота",false, ConsoleColor.Blue);
             this.BotBase = new BotDB(Random);
+            Logger.Info("Получение базы Библии", false, ConsoleColor.Blue);
             this.BibleDb = new BibleDB(Random);
+
+            Logger.Info("Фомирование библии в программе", false, ConsoleColor.Blue);
             this.Bible = new BibleWorker(BibleDb, BotBase, Random);
 
-            this.Users = new Users.Users(BotBase, Bible);          
+            Logger.Info("Фомирование списка пользователей в программе", false, ConsoleColor.Blue);
+            this.Users = new Users.Users(BotBase, Bible);
+
+            Logger.Info("Фомирование списка мемов в программе", false, ConsoleColor.Blue);
             this.Mems = new Mems(BotBase,botClient,token);
+
+            Logger.Info("Текстворкер", false, ConsoleColor.Blue);
             this.TextWorker = new TextWorker(BotBase,Random);
+
+            Logger.Info("Формирование Списка Неотвеченых анонимных сообщений", false, ConsoleColor.Blue);
             this.UnansweredMessage = new UnansveredsMeesages(BotBase);
+
+            Logger.Info("Формирование благословений", false, ConsoleColor.Blue);
             this.Bless = new Bless(Bible,Random);
+
+            Logger.Info("Анонимные сообщение", false, ConsoleColor.Blue);
             this.AnonMessages = new AnonMessages();
+
+            Logger.Info("Спамер", false, ConsoleColor.Blue);
             this.Spamer = new Spamer(this);
 
         }
@@ -183,7 +202,7 @@ namespace TelegramBotClean.Bot
 
         public async Task SendAdminMessage(string message)
         {
-           SendText(message, 1094316046L);
+            SendText(message, 1094316046L);
         }
         public async Task SendMenu(long idChat,string textInfo= "Мир тебе, дорогой мой друг")
         {
@@ -242,7 +261,7 @@ namespace TelegramBotClean.Bot
             }
             catch (Exception e)
             {
-                Logger.Error($"Не удалось отправить сообщение пользователю " + e.Message, "SendMessageMenu");
+                Logger.Error($"Не удалось отправить сообщение пользователю " + e.Message);
             }
         }
 
@@ -262,6 +281,13 @@ namespace TelegramBotClean.Bot
                 return;
             } // Если даже после этого этапа, юзер не определен значит есть какаято ошибка
             MessageI receivedMes = new MessageI(up, user);// инициализируем сообщение
+
+            //Сохраняет все полученные сообщения, при вклёченном параметре(нагружает сильно!)
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+            if (SaveAllMessageInDataBase) BotBase.CreateMessage(receivedMes, receivedMes.Commands);
+            //+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+
             string sideMenu = user.SideMenu;
              Command selectedCommand = receivedMes.Commands.AsCommand();
 

@@ -85,7 +85,7 @@ namespace TelegramBotClean.Data
             catch (Exception e)
             {
                 con.Close();
-                Error(e.Message, "Connection Checking");
+                Error(e.Message);
                 return false;
             }
         }
@@ -98,11 +98,11 @@ namespace TelegramBotClean.Data
         {
             if (!IsReady)
             {
-                Error("База не готова к выполнению!", "Execute");
+                Error("База не готова к выполнению!");
                 SetNullOnElements();
                 return false;
             }
-            Info("Попытка выполнить запрос: " + sql, "Execute", true);
+            Info("Попытка выполнить запрос: " + sql, true);
             try
             {
                 con.Open();
@@ -119,7 +119,7 @@ namespace TelegramBotClean.Data
             catch (Exception e)
             {
                 con.Close();
-                Error(e.Message, "Execute");
+                Error(e.Message);
                 SetNullOnElements();
                 return false;
             }
@@ -134,11 +134,11 @@ namespace TelegramBotClean.Data
             string met = new StackTrace().GetFrame(1).GetMethod().Name;
             if (!IsReady)
             {
-                Error("База не готова к выполнению!", "Execute");
+                Error("База не готова к выполнению!");
                 SetNullOnElements();
                 return new DataTable();
             }
-            Info("Попытка выполнить запрос: " + sql + " База:" + con.Database, met);
+            Info("Попытка выполнить запрос: " + sql + " База:" + con.Database);
             try
             {
                 List<string> jsonFormatInfo = new List<string>();
@@ -150,7 +150,7 @@ namespace TelegramBotClean.Data
                 DataTable t = new DataTable();
                 adapter.Fill(t);
                 con.Close();
-                Info("Удалась попытка выполнить запрос: ", met);
+                Info("Удалась попытка выполнить запрос: ");
                 InfoStop();
                 if (t.Rows.Count != 0)
                 {
@@ -167,7 +167,7 @@ namespace TelegramBotClean.Data
             catch (Exception e)
             {
                 con.Close();
-                Error(e.Message, met);
+                Error(e.Message);
                 return new DataTable();
             }
         }
@@ -335,7 +335,7 @@ namespace TelegramBotClean.Data
         {
             if (columns.Length != values.Length)
             {
-                Error("Получено разное количество столбцов и значений", "InsertInto");
+                Error("Получено разное количество столбцов и значений");
                 return -1;
             }
             else
@@ -353,7 +353,7 @@ namespace TelegramBotClean.Data
                         .Where(el => el["COLUMN_NAME"].ToString().ToLower() == columns[i].ToLower());
                         if (InfoColumn.Count() == 0)
                         {
-                            Error($"Колонка {columns[i]} не найдена", "InsertInto");
+                            Error($"Колонка {columns[i]} не найдена");
                             return -1;
                         }
                         // проверка соответствия типа
@@ -392,7 +392,7 @@ namespace TelegramBotClean.Data
                        
                         if (realColumnType != typecol)
                         {
-                            Error($"Введенное значение {values[i]} не соответствует типу колонки {infoColumn["COLUMN_NAME"]}", "InsertInto");
+                            Error($"Введенное значение {values[i]} не соответствует типу колонки {infoColumn["COLUMN_NAME"]}");
                             return -1;
                         }
                         string validValue = realColumnType switch
@@ -416,7 +416,7 @@ namespace TelegramBotClean.Data
                 }
                 else
                 {
-                    Error($"Таблица ({table}) не найдена", "InsertInto");
+                    Error($"Таблица ({table}) не найдена");
                     return -1;
                 }
 
@@ -481,11 +481,12 @@ namespace TelegramBotClean.Data
             try
             {
                 con = new SqlConnection(constring);
+                Info($"{con.Database}Подключение проверено!",false,ConsoleColor.Cyan);
                 return true;
             }
             catch (Exception e)
             {
-                Error(e.Message, "CreateConnection");
+                Error(e.Message);
                 return false;
             }
             return false;

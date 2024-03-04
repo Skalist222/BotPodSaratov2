@@ -4,6 +4,7 @@ using Telegram.Bot.Exceptions;
 using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using TelegramBotClean.Data;
 
 
 namespace TelegramBotClean.Bot
@@ -34,7 +35,9 @@ namespace TelegramBotClean.Bot
             Console.WriteLine($"Бот запущен в: @{botClient.GetMeAsync().Result.Username}");
             DateTime finish = DateTime.Now;
             sender.SendAdminMessage("Время запуска бота"+(finish - startingTime).TotalSeconds+"");
+            
             Console.ReadLine();
+            
         }
         private async Task GetUpdates(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {

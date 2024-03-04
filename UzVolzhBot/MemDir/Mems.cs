@@ -36,7 +36,7 @@ namespace TelegramBotClean.MemDir
             }
             else
             {
-                Error("Не удалось отправить мем в базу данных!!", "AddMem(Mem mem, BotBD botBase)");
+                Error("Не удалось отправить мем в базу данных!!");
                 return false;
             }
         }
