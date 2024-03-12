@@ -159,7 +159,7 @@ namespace TelegramBotClean.Data
                 }
                 else
                 {
-                    Error("По запросу ничего не найдено");
+                    Error(sql+Environment.NewLine+"По запросу ничего не найдено");
                     SetNullOnElements();
                     return new DataTable();
                 }
@@ -662,7 +662,7 @@ namespace TelegramBotClean.Data
                 new object[] { "Проверка"},true);
         }
      
-        public long CreateAnonMessage(MessageI mes, string anonName, User teen, User WentTeacher = null)
+        public long CreateAnonMessage(MessageI mes, User teen, User WentTeacher = null)
         {
             long mesId = CreateMessage(mes,Commands.SelectCommands("anon"));
             if (mesId == -1) return -1;

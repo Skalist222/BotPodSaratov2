@@ -220,7 +220,7 @@ namespace TelegramBotClean.CommandsDir
         public static void ExCreateAnonimMes(Sender sender, MessageI mes)
         {
             Console.WriteLine("Добавлена анонимка");
-            sender.BotBase.CreateAnonMessage(mes,mes.Sender.AnonName,mes.Sender);
+            sender.BotBase.CreateAnonMessage(mes,mes.Sender);
         }
 
         public static void ExOnAnswereAnon(Sender sender, MessageI mes)

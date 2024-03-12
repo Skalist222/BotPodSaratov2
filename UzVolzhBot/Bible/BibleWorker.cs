@@ -53,6 +53,7 @@ namespace TelegramBotClean.Bible
         public Verse GetVerseByAddress(string address)
         {
             if (address == "") return null;
+            if (address == "-") return null;
             Verse v = Verses[address];
             if (v is null)
             {

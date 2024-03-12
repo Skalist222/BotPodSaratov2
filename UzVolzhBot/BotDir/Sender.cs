@@ -177,10 +177,6 @@ namespace TelegramBotClean.Bot
             }
             
         }
-        public async Task SendAdminMessage(Bitmap bitMap)
-        {
-            SendImage(bitMap, 1094316046L);
-        }
         public async Task<Message> SendMenuMessage(MesMenuTable menu, User user, string text = "")
         {
             InlineKeyboardMarkup ikm = new InlineKeyboardMarkup(menu);
