@@ -1,248 +1,324 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using PodrostkiBot.DataBase.Engine;
 using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using TelegramBotClean.Data;
+using Telegram.Bot;
+using Telegram.Bot.Types;
 
-namespace TelegramBotClean.Bible
+namespace PodrostkiBot.Bible
 {
     public class BibleWorker
     {
-        private Random Random;
-        protected Books Books { get; }
-        protected Chapters Chapters { get; }
-        public Verses Verses { get;}
-        public Verses GoldVerses { get;}
-        public BibleWorker(BibleDB bibleBase,BotDB botBase,Random r)
+        public BibleBase DB;
+        public string pathBible;
+
+
+        public BibleWorker()
         {
-            GoldVerses = new Verses();
-            this.Random = r;
-            this.Books      = bibleBase.GetBooks();
-            this.Chapters   = bibleBase.GetChapters();
-            this.Verses     = bibleBase.GetVerses(Books, Chapters);
-            SetGoldverses(botBase);
+            DB = new BibleBase();
         }
-        private void SetGoldverses(BotDB botBase)
+        public int ChapterCount(string shortName)
         {
-            DataTable t = botBase.GetGoldVerses();
-            for (int i = 0; i < t.Rows.Count; i++)
+            string idBook = DB.GetIdBook(shortName);
+            if (idBook is not null) return DB.ChapterCount(idBook);
+            return 0;
+        }
+        public int VersesCount(string shortNameBook, string chapterNum)
+        {
+            string idChapter = DB.GetIdChapter(shortNameBook, chapterNum);
+            if (idChapter is not null) return DB.VersesCount(idChapter);
+            return 0;
+        }
+        public string[] GetBooksNames()
+        {
+            List<string> names = new List<string>();
+            DataTable t = DB.GetAllBooks();
+            if (t is not null && t.Rows.Count != 0)
             {
-                string address = t.Rows[i]["address"].ToString();
-                Verse v = Verses[address];
-                if (v is null)
+                foreach (DataRow r in t.Rows)
                 {
-                    Logger.Error($"{address} не найден в библии!!!");
+                    names.Add(r["name_book"].ToString());
                 }
-                else
-                {
-                    this.GoldVerses.Add(v);
-                }
-               
+                return names.ToArray();
             }
+            else return new string[] { };
+        }
+        public string[] GetBooksShortNames()
+        {
+            List<string> shortNames = new List<string>();
+            DataTable t = DB.GetAllBooks();
+            if (t is not null && t.Rows.Count != 0)
+            {
+                foreach (DataRow r in t.Rows)
+                {
+                    shortNames.Add(r["short_name"].ToString());
+                }
+                return shortNames.ToArray();
+            }
+            else return new string[] { };
+        }
+        public string GetBookNameByShortName(string shortName)
+        {
+            string nameBook = DB.GetBookName(shortName);
+            if (nameBook is not null) return nameBook;
+            return "";
         }
         public Verse GetRandomVerse()
         {
-            return this.Verses[Random.Next(Verses.Count)];
-        }
-        public Verse GetRandomGoldVerse()
-        {
-            return this.GoldVerses[Random.Next(GoldVerses.Count)];
-        }
-        public Verse GetVerseByAddress(string address)
-        {
-            if (address == "") return null;
-            if (address == "-") return null;
-            Verse v = Verses[address];
-            if (v is null)
+            DataTable t = DB.GetRandomVerse();
+            if (t is null || t.Rows is null || t.Rows.Count == 0) throw new EmtyVerseListException();
+            else
             {
-                Logger.Error($"{address} не найден в библии!!!");
+                Verse v = new Verse(new AddressVerse(t.Rows[0][4].ToString()), t.Rows[0][3].ToString());
+                return v;
+            }
+        }
+        public Verse? GetVerse(string address)
+        {
+            try
+            {
+                return DB.GetVerse(address);
+
+            }
+            catch (EmtyVerseListException e)
+            {
+                Console.WriteLine(e.Message);
                 return null;
+            }
+        }
+        public Verse GetNextVerse(Verse s)
+        {
+            //Verse retVerse = GetVerse("Откр 22:21");
+            Verse defaultVerse = GetVerse("Быт 1:1");
+            if (s.AddressText == "Откр 22:21") return defaultVerse;
+            else
+            {
+
+                return DB.GetNextVerse(s.AddressText);
+            }
+        }
+        public Verse GetPreVerse(Verse s)
+        {
+            Verse defaultVerse = GetVerse("Откр 22:21");
+            if (s.AddressText == "Быт 1:1") return defaultVerse;
+            else
+            {
+                return DB.GetPreVerse(s.AddressText);
+            }
+            return null;
+        }
+        public Verse? SearchVerse(string text)
+        {
+
+            string[] split = text.Split(' ');
+            string shortNameBook = "";
+            int chapterNumber = 0;
+            int verseNumber = 0;
+            int bookNum = 0;
+
+            for (int i = 0; i < split.Length; i++)
+            {
+                string s = split[i];
+                string[] wDot = s.Split(':');
+
+                if (wDot.Length == 2)
+                {
+                    try
+                    {
+                        chapterNumber = int.Parse(wDot[0]);
+                        verseNumber = int.Parse(wDot[1]);
+                        continue;
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+
+                }
+                if (bookNum == 0)
+                {
+                    bookNum = s == "1" ? 1 : s == "2" ? 2 : s == "3" ? 3 : s == "4" ? 4 : 0;
+                    if (bookNum != 0) continue;
+                }
+                if (shortNameBook == "")
+                {
+                    //филипп
+                    string currentShortName = DB.GetFirstBookShortName(s);
+                    if (currentShortName is not null)
+                    {
+                        shortNameBook = currentShortName;
+                    }
+                }
+            }
+            if (shortNameBook == "" || chapterNumber == 0 || verseNumber == 0)
+            {
+                text = text.Substring(split[0].Length + 1, text.Length - (split[0].Length + 1));
+                return SearchVerseByText(text);
             }
             else
             {
-                return v;
-            }
-            
-        }
-        public Verse GetVerseByAddress(AddressVerse address)
-        {
-            if (address is not null) return GetVerseByAddress(address.ToString());
-            else return null;
-        }
-    }
-    
-    public class AddressVerse
-    {
-        Book book;
-        Chapter chapter;
-        Verse verse;
-
-        public string ToString()
-        {
-            return book.ShortName + " " + chapter.Number + ":" + verse.Number;
-        }
-        public AddressVerse(Book book, Chapter chapter, Verse verse)
-        {
-            this.book = book;
-            this.chapter = chapter;
-            this.verse = verse;
-        }
-        private AddressVerse(string textAddress, BibleWorker bibleWorker)
-        {
-            string[] split = textAddress.Split(' ');
-            string bookShortName = split[0];
-            long chapterNumber = Convert.ToInt64(split[1].Split(':')[0]);
-        }
-        public static AddressVerse ByTextAddress(string textAddress, BibleWorker bibleWorker)
-        {
-            return new AddressVerse(textAddress, bibleWorker);
-           
-        }
-        //public string ToString()
-        //{
-            
-        //}
-      
-    }
-    public class Book 
-    {
-        string name;
-        string shortName;
-        long idInDB;
-        long countChapters;
-
-        public string Name { get { return name; } }
-        public string ShortName { get { return shortName; } }
-        public long Id { get { return idInDB; } }
-        public long CountChapters { get { return countChapters; } }
-  
-        public Book(string name,string shortName,long idInDB,long countChapters)
-        {
-            this.name = name;
-            this.shortName = shortName;
-            this.idInDB = idInDB;
-            this.countChapters = countChapters;
-        }
-
-    }
-    public class Books:List<Book>
-    {
-        public Books() : base() { }
-        public Books(List<Book> books) : base()
-        {
-            for (int i = 0; i < books.Count; i++)
-            {
-                Add(books[i]);
-            }
-        }
-        public Book BookByChapter(Chapter chapter)
-        {
-            for (int i = 0; i < this.Count; i++)
-            {
-                if (chapter.BookId == this[i].Id) return this[i];
-            }
-            return null;
-        }
-    }
-    public class Chapter 
-    {
-        long id;
-        long bookId;
-        long number;
-        long countVerses;
-
-        public long Id { get { return id; } }
-        public long BookId {  get { return bookId; } }
-        public long Number {  get { return number; } }
-        public long CountVerses {  get { return countVerses; } }
-
-        public Chapter(long id,long bookId, long number, long countVerses)
-        {
-            this.id = id;
-            this.bookId = bookId;
-            this.number = number;
-            this.countVerses = countVerses;
-        }
-    }
-    public class Chapters : List<Chapter> 
-    {
-        public Chapters() : base() { }
-        public Chapters(List<Chapter> chapters) : base()
-        {
-            for (int i = 0; i < chapters.Count; i++)
-            {
-                Add(chapters[i]);
-            }
-        }
-        public Chapter Select(long chapterId)
-        {
-            for (int i = 0; i < this.Count; i++)
-            {
-                if (this[i].Id == chapterId) return this[i];
-            }
-            return null;
-        }
-        
-    }
-    public class Verse
-    {
-        long verseNumber;
-        long idChapter;
-        long idVerse;
-        string text;
-        AddressVerse address;
-
-        public long Number { get { return verseNumber; } }
-        public long IdChapter { get { return idChapter; } }
-        public long IdVerse { get { return  idVerse; } }
-        public string Text { get { return text; } }
-        public string TextWithAddress { get { return address.ToString() + $" \"{text}\""; } }
-        public AddressVerse Address { get { return address; } }
-        public string AddresText { get { return address.ToString(); } }
-
-        public string ToString()
-        {
-            return TextWithAddress;
-        }
-        public Verse(long verseNumber,long idChapter, long idVerse,string text,Books books,Chapters chapters)
-        {
-            this.verseNumber = verseNumber;
-            this.idChapter = idChapter;
-            this.idVerse = idVerse;
-            this.text = text;
-            Chapter c = chapters.Select(idChapter);
-            Book b = books.BookByChapter(c);
-
-            address = new AddressVerse(b,c,this);
-        }
-      
-
-    }
-    public class Verses :List<Verse> 
-    {
-        public Verses() : base() { }
-        public Verses(List<Verse> verses) : base()
-        {
-            for (int i = 0; i < verses.Count; i++)
-            {
-                Add(verses[i]);
-            }
-        }
-        public Verse this[string address]
-        {
-            get 
-            {
-                for (int i = 0; i < this.Count; i++)
+                if (bookNum != 0)
                 {
-                    if (this[i].AddresText == address)
-                        return this[i];
+                    //найди 1 цар 2:8
+                    string sub = shortNameBook.Substring(1, shortNameBook.Length - 1);
+                    shortNameBook = bookNum + "" + sub;
                 }
-                return null;
+                string address = shortNameBook + " " + chapterNumber + ":" + verseNumber;
+
+                return DB.GetVerse(address);
+
             }
+            return null;
+        }
+        public async void SearchAndSendVerse(string text, ITelegramBotClient botClient, CancellationToken token)
+        {
+
+        }
+        public Verse? SearchVerseByText(string text)
+        {
+
+            VerseList verses = new VerseList();
+            string[] words = text.Split(' ');
+            //Защита от дурака
+            if (words.Length > 15) return null;
+            Verse[] versesInBase = DB.GetAllVerses();
+
+            DateTime startTime = DateTime.Now;
+
+            int finishedIteration = 0;
+
+            for (int i = 0; i < words.Length; i++)
+            {
+                string word = words[i];
+                if (word != "и" && word != "а" && word != "о" && word != "с")
+                {
+                    new Thread(() =>
+                    {
+                        for (int j = 0; j < versesInBase.Length; j++)
+                        {
+                            if (versesInBase[j].Text.ToLower().IndexOf(word.ToLower()) != -1) verses.Add(versesInBase[j]);
+                        }
+                        finishedIteration++;
+                    }).Start();
+                }
+                else finishedIteration++;
+            }
+            //127 милисекунд
+            while (finishedIteration < words.Length) { }
+            // Если ничего не нашел реально
+            if (verses.Count == 0) return null;
+            int[] verseMaximuses;
+            VerseList list = verses.GetDuplicates();
+            DateTime finishTime = DateTime.Now;
+
+            //Console.WriteLine((finishTime - startTime).Milliseconds);
+            int a = 0;
+            if (list.Count != 0)
+            {
+                verseMaximuses = new int[list.Count];
+                for (int i = 0; i < list.Count; i++)
+                {
+                    foreach (string word in words)
+                    {
+                        if (list[i].Text.ToLower().IndexOf(word.ToLower()) != -1) verseMaximuses[i]++;
+                    }
+                }
+                int max = verseMaximuses.Max();
+                List<int> verseIndexes = new List<int>();
+                for (int i = 0; i < verseMaximuses.Length; i++)
+                {
+                    if (verseMaximuses[i] == max) verseIndexes.Add(i);
+                }
+                return list[verseIndexes[0]];
+            }
+            else
+            {
+                verseMaximuses = new int[verses.Count];
+                foreach (Verse v in verses)
+                {
+                    for (int i = 0; i < words.Length; i++)
+                    {
+                        string word = words[i];
+                        if (v.Text.ToLower().IndexOf(word.ToLower()) != -1)
+                            verseMaximuses[i]++;
+                    }
+                }
+                int index = verseMaximuses.ToList().IndexOf(verseMaximuses.Max());
+                return verses[index];
+            }
+
+        }
+        public Verse? SearchVerseByTextAsync(string text)
+        {
+            VerseList verses = new VerseList();
+            string[] words = text.Split(' ');
+            //Защита от дурака
+            if (words.Length > 15) return null;
+            Verse[] versesInBase = DB.GetAllVerses();
+
+
+            DateTime startTime = DateTime.Now;
+
+            int finishedIteration = 0;
+
+            for (int i = 0; i < words.Length; i++)
+            {
+                string word = words[i];
+                if (word != "и" && word != "а" && word != "о" && word != "с")
+                {
+                    new Thread(() =>
+                    {
+                        for (int j = 0; j < versesInBase.Length; j++)
+                        {
+                            if (versesInBase[j].Text.ToLower().IndexOf(word.ToLower()) != -1) verses.Add(versesInBase[j]);
+                        }
+                        finishedIteration++;
+                    }).Start();
+                }
+            }
+            //127 милисекунд
+            while (finishedIteration < words.Length) { }
+
+            // Если ничего не нашел реально
+            if (verses.Count == 0) return null;
+            int[] verseMaximuses;
+            VerseList list = verses.GetDuplicates();
+            DateTime finishTime = DateTime.Now;
+
+            //Console.WriteLine((finishTime - startTime).Milliseconds);
+            int a = 0;
+            if (list.Count != 0)
+            {
+                verseMaximuses = new int[list.Count];
+                for (int i = 0; i < list.Count; i++)
+                {
+                    foreach (string word in words)
+                    {
+                        if (list[i].Text.ToLower().IndexOf(word.ToLower()) != -1) verseMaximuses[i]++;
+                    }
+                }
+                int max = verseMaximuses.Max();
+                List<int> verseIndexes = new List<int>();
+                for (int i = 0; i < verseMaximuses.Length; i++)
+                {
+                    if (verseMaximuses[i] == max) verseIndexes.Add(i);
+                }
+                return list[verseIndexes[0]];
+            }
+            else
+            {
+                verseMaximuses = new int[verses.Count];
+                foreach (Verse v in verses)
+                {
+                    for (int i = 0; i < words.Length; i++)
+                    {
+                        string word = words[i];
+                        if (v.Text.ToLower().IndexOf(word.ToLower()) != -1)
+                            verseMaximuses[i]++;
+                    }
+                }
+                int index = verseMaximuses.ToList().IndexOf(verseMaximuses.Max());
+                return verses[index];
+            }
+
         }
     }
-
-    
 }

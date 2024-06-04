@@ -9,7 +9,6 @@
 
   <ItemGroup>
     <None Remove="Bible\BibleWorker.cs~RF541ff32.TMP" />
-    <None Remove="BotDir\Sender.cs~RF4b12019.TMP" />
   </ItemGroup>
 
   <ItemGroup>
